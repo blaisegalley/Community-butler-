@@ -337,6 +337,45 @@ h2, .h2 { font-weight: 600; letter-spacing: -0.035em; line-height: 1.16; color: 
 .auth-only { display: none; }
 .auth-only.is-active { display: flex; flex-direction: column; }
 
+.form-error {
+  display: none; background: rgba(196, 68, 46, 0.1); border: 1px solid rgba(196, 68, 46, 0.35);
+  color: #8c2f1c; font-size: 13px; padding: 10px 12px; border-radius: 8px; margin-bottom: 16px;
+}
+.form-error.is-visible { display: block; }
+
+.empty-state {
+  background: var(--white); border: 1px dashed var(--border); border-radius: 12px;
+  padding: 24px 18px; text-align: center; color: var(--muted); font-size: 13.5px;
+}
+
+/* ---------- Butler dashboard (post sign-in on /auth) ---------- */
+.butler-dash { max-width: 720px; margin: 0 auto; text-align: left; }
+.butler-dash-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+.butler-dash-head h2 { font-size: 21px; letter-spacing: -0.03em; }
+.butler-dash-sub { color: var(--muted); font-size: 13.5px; margin-top: 3px; }
+.dash-section { margin-bottom: 32px; }
+.dash-section h3 { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 12px; }
+
+.job-tile { background: var(--white); border: 1px solid var(--border-soft); border-radius: 14px; padding: 16px 18px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+.job-tile-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.job-tile-title { font-weight: 700; font-size: 14.5px; letter-spacing: -0.01em; }
+.job-tile-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.job-tile-details { font-size: 13px; color: var(--charcoal-soft); margin-top: 8px; line-height: 1.5; }
+.job-tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 4px 14px; margin-top: 10px; font-size: 12px; }
+.job-tile-grid dt { color: var(--muted); }
+.job-tile-grid dd { color: var(--charcoal); font-weight: 500; }
+.job-tile-actions { margin-top: 12px; }
+.job-tile-actions .btn { height: 34px; padding: 0 14px; font-size: 12.5px; box-shadow: 0 2px 0 var(--gold-deep); }
+.job-tile-actions .btn:active { box-shadow: none; transform: translateY(2px); }
+
+.status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
+.status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.status-Approved { background: rgba(59, 130, 130, 0.14); color: #276b6b; }
+.status-Assigned { background: rgba(59, 100, 200, 0.12); color: #2d4f9e; }
+.status-Completed { background: rgba(60, 150, 80, 0.14); color: #2c7a41; }
+
+.match-badge { font-size: 10.5px; font-weight: 700; color: var(--gold-deep); background: rgba(232, 179, 61, 0.14); border: 1px solid rgba(232, 179, 61, 0.35); border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+
 /* ---------- reveal on scroll ---------- */
 .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
 .reveal.is-in { opacity: 1; transform: none; }

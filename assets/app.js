@@ -116,27 +116,40 @@
     });
   }
 
-  /* ---------- auth form -> store ---------- */
+  /* ---------- auth form -> store, then hand off to the Butler dashboard ---------- */
   var authForm = document.querySelector("form[data-auth-form]");
   if (authForm) {
     authForm.addEventListener("submit", function (e) {
       e.preventDefault();
       if (!authForm.reportValidity()) { return; }
+      if (!window.CBStore) { return; }
+
       var isSignup = document.querySelector(".auth-toggle button[data-mode='signup']").classList.contains("is-active");
-      var successText = { h: "You're in", p: "This is a demo flow — account creation isn't wired up to a backend yet, but your details looked good." };
-      if (isSignup && window.CBStore) {
+      var errorEl = document.getElementById("auth-error");
+      if (errorEl) { errorEl.classList.remove("is-visible"); }
+
+      if (isSignup) {
         var prefs = Array.prototype.slice.call(document.querySelectorAll("input[name='jobTypePref']:checked")).map(function (cb) { return cb.value; });
-        CBStore.addButler({
+        var butler = CBStore.addButler({
           name: document.getElementById("su-name").value,
           contact: document.getElementById("su-contact").value,
           serviceArea: document.getElementById("su-area").value,
           jobTypePrefs: prefs
         });
-        successText = { h: "You're all set", p: "Your Butler profile was saved on this device. An admin will see you in the roster." };
+        CBStore.butlerLoginById(butler.id);
+        authForm.reset();
+        if (window.CBButlerDash) { CBButlerDash.render(); }
       } else {
-        successText = { h: "Welcome back", p: "This is a demo flow — sign-in isn't wired up to a backend yet, but your details looked good." };
+        var contact = document.getElementById("si-contact").value;
+        var found = CBStore.butlerLoginByContact(contact);
+        if (found) {
+          authForm.reset();
+          if (window.CBButlerDash) { CBButlerDash.render(); }
+        } else if (errorEl) {
+          errorEl.textContent = "We couldn't find a Butler account with that phone/email on this device. Since there's no backend yet, accounts only exist on the device/browser they signed up on — sign up here if this is your first time on this device.";
+          errorEl.classList.add("is-visible");
+        }
       }
-      showSuccess(authForm, successText);
     });
   }
 

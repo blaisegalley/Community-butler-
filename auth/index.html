@@ -45,73 +45,95 @@
   </header>
 
   <main id="top">
-    <section class="hero hero-compact">
-      <div class="hero-bg" aria-hidden="true"></div>
-      <div class="hero-copy">
-        <div class="auth-toggle">
-          <button type="button" data-mode="signup">Sign up</button>
-          <button type="button" data-mode="signin">Sign in</button>
+    <div id="auth-guest">
+      <section class="hero hero-compact">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <div class="auth-toggle">
+            <button type="button" data-mode="signup">Sign up</button>
+            <button type="button" data-mode="signin">Sign in</button>
+          </div>
+
+          <h1 id="auth-heading" style="font-size:var(--h2); font-weight:600;">Get started</h1>
+          <p id="auth-lede" class="lede">Create your Butler account to start seeing jobs near you.</p>
         </div>
+      </section>
 
-        <h1 id="auth-heading" style="font-size:var(--h2); font-weight:600;">Get started</h1>
-        <p id="auth-lede" class="lede">Create your Butler account to start seeing jobs near you.</p>
-      </div>
-    </section>
-
-    <section class="section" style="padding-top:0;">
-      <div class="form-shell reveal">
-        <form data-auth-form novalidate>
-          <div class="auth-only" data-mode="signup">
-            <div class="field">
-              <label for="su-name">Name</label>
-              <input id="su-name" name="name" type="text" autocomplete="name" required>
-            </div>
-            <div class="field">
-              <label for="su-contact">Phone or email</label>
-              <input id="su-contact" name="contact" type="text" autocomplete="tel" required>
-            </div>
-            <div class="field">
-              <label for="su-area">Service area</label>
-              <input id="su-area" name="area" type="text" placeholder="Zip code or neighborhood" required>
-            </div>
-            <div class="field">
-              <label>Job types you're interested in</label>
-              <div style="display:flex; flex-wrap:wrap; gap:8px 16px; padding-top:2px;">
-                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Yard work"> Yard work</label>
-                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Snow shoveling"> Snow shoveling</label>
-                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Moving help"> Moving help</label>
-                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Junk hauling"> Junk hauling</label>
-                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Cleanouts"> Cleanouts</label>
-                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Dog walking"> Dog walking</label>
-                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Odd jobs"> Odd jobs</label>
+      <section class="section" style="padding-top:0;">
+        <div class="form-shell reveal">
+          <div id="auth-error" class="form-error"></div>
+          <form data-auth-form novalidate>
+            <div class="auth-only" data-mode="signup">
+              <div class="field">
+                <label for="su-name">Name</label>
+                <input id="su-name" name="name" type="text" autocomplete="name" required>
+              </div>
+              <div class="field">
+                <label for="su-contact">Phone or email</label>
+                <input id="su-contact" name="contact" type="text" autocomplete="tel" required>
+              </div>
+              <div class="field">
+                <label for="su-area">Service area</label>
+                <input id="su-area" name="area" type="text" placeholder="Zip code or neighborhood" required>
+              </div>
+              <div class="field">
+                <label>Job types you're interested in</label>
+                <div style="display:flex; flex-wrap:wrap; gap:8px 16px; padding-top:2px;">
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Yard work"> Yard work</label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Snow shoveling"> Snow shoveling</label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Moving help"> Moving help</label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Junk hauling"> Junk hauling</label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Cleanouts"> Cleanouts</label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Dog walking"> Dog walking</label>
+                  <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Odd jobs"> Odd jobs</label>
+                </div>
+              </div>
+              <div class="field">
+                <label for="su-password">Password</label>
+                <input id="su-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
               </div>
             </div>
-            <div class="field">
-              <label for="su-password">Password</label>
-              <input id="su-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
-            </div>
-          </div>
 
-          <div class="auth-only" data-mode="signin">
-            <div class="field">
-              <label for="si-contact">Phone or email</label>
-              <input id="si-contact" name="contact" type="text" autocomplete="username" required>
+            <div class="auth-only" data-mode="signin">
+              <div class="field">
+                <label for="si-contact">Phone or email</label>
+                <input id="si-contact" name="contact" type="text" autocomplete="username" required>
+              </div>
+              <div class="field">
+                <label for="si-password">Password</label>
+                <input id="si-password" name="password" type="password" autocomplete="current-password" required>
+              </div>
             </div>
-            <div class="field">
-              <label for="si-password">Password</label>
-              <input id="si-password" name="password" type="password" autocomplete="current-password" required>
-            </div>
-          </div>
 
-          <button type="submit" id="auth-submit" class="btn btn-solid btn-wide hero-btn">Create account</button>
-        </form>
-
-        <div class="form-success" role="status">
-          <h3>You're in</h3>
-          <p>This is a demo flow — account creation isn't wired up to a backend yet, but your details looked good.</p>
+            <button type="submit" id="auth-submit" class="btn btn-solid btn-wide hero-btn">Create account</button>
+          </form>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
+
+    <div id="auth-dashboard" hidden>
+      <section class="section">
+        <div class="butler-dash">
+          <div class="butler-dash-head">
+            <div>
+              <h2 id="dash-greeting">Welcome back</h2>
+              <p class="butler-dash-sub" id="dash-sub"></p>
+            </div>
+            <button type="button" id="butler-logout" class="btn btn-ghost" style="height:38px; padding:0 16px; font-size:13px;">Log out</button>
+          </div>
+
+          <div class="dash-section">
+            <h3>Available jobs <span id="available-count" style="font-weight:400; color:var(--muted); font-size:12.5px;"></span></h3>
+            <div id="available-list"></div>
+          </div>
+
+          <div class="dash-section">
+            <h3>My jobs</h3>
+            <div id="my-jobs-list"></div>
+          </div>
+        </div>
+      </section>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -140,5 +162,6 @@
 
 <script src="/assets/store.js"></script>
 <script src="/assets/app.js"></script>
+<script src="/assets/butler.js"></script>
 </body>
 </html>
