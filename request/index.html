@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Request a Job — Community Butler</title>
 <meta name="description" content="Tell Community Butler what you need done. A manager reviews every request before a Butler is booked — nothing is charged now.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cg transform='rotate(-30 12 12)'%3E%3Ccircle cx='7.3' cy='3.2' r='1.45'/%3E%3Crect x='5.5' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Crect x='14.9' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Ccircle cx='16.7' cy='20.8' r='1.45'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 44'%3E%3Cpolygon points='5,5 21,10 5,15' fill='%23171512'/%3E%3Cpolygon points='43,5 27,10 43,15' fill='%23171512'/%3E%3Crect x='20.5' y='7' width='7' height='6' rx='1.2' fill='%23171512'/%3E%3Cpath d='M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z' fill='%23171512'/%3E%3Ccircle cx='24' cy='31' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='35' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='39' r='1.7' fill='white'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&family=Instrument+Serif:ital@1&display=swap">
 <link rel="stylesheet" href="/assets/styles.css">
 </head>
-<body style="background:#000;color:#fff">
+<body style="background:#FAF9F6;color:#171512">
 
 <div class="grain" aria-hidden="true"></div>
 <div class="bg-glow" aria-hidden="true"></div>
@@ -18,30 +18,31 @@
   <div class="menu-backdrop" id="menu-backdrop" aria-hidden="true"></div>
 
   <header class="header">
-    <a href="/" class="logo appear appear--scale" style="--d:0.08s" aria-label="Community Butler">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <g transform="rotate(-30 12 12)">
-          <circle cx="7.3" cy="3.2" r="1.45"/>
-          <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-          <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-          <circle cx="16.7" cy="20.8" r="1.45"/>
-        </g>
+    <a href="/" class="logo" aria-label="Community Butler">
+      <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+        <polygon points="5,5 21,10 5,15" fill="#171512"/>
+        <polygon points="43,5 27,10 43,15" fill="#171512"/>
+        <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#171512"/>
+        <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#171512"/>
+        <circle cx="24" cy="31" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="35" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="39" r="1.7" fill="#FAF9F6"/>
       </svg>
       <span>Community<span class="logo-suffix"> Butler</span></span>
     </a>
 
     <nav id="site-nav" class="nav" aria-label="Primary">
-      <a href="/#butlers" class="nav-link appear appear--scale" style="--d:0.16s">For Butlers</a>
-      <a href="/#neighbors" class="nav-link appear appear--soft" style="--d:0.28s">For Neighbors</a>
-      <a href="/request/" class="nav-link appear appear--scale" style="--d:0.40s">Request a Job</a>
+      <a href="/#butlers" class="nav-link">For Butlers</a>
+      <a href="/#neighbors" class="nav-link">For Neighbors</a>
+      <a href="/request/" class="nav-link">Request a Job</a>
       <a href="/auth/?mode=signup" class="nav-link nav-link-auth">Get Started</a>
       <a href="/auth/?mode=signin" class="nav-link nav-link-auth">Butler Sign In</a>
     </nav>
 
     <div class="header-right">
-      <a href="/auth/?mode=signin" class="btn btn-ghost appear appear--scale" style="--d:0.30s">Butler Sign In</a>
-      <a href="/auth/?mode=signup" class="btn btn-solid appear appear--scale" style="--d:0.34s">Get Started</a>
-      <button type="button" class="burger appear appear--scale" style="--d:0.34s" id="burger" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
+      <a href="/auth/?mode=signin" class="btn btn-ghost">Butler Sign In</a>
+      <a href="/auth/?mode=signup" class="btn btn-solid">Get Started</a>
+      <button type="button" class="burger" id="burger" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
         <span class="burger-bar"></span><span class="burger-bar"></span><span class="burger-bar"></span>
       </button>
     </div>
@@ -49,10 +50,11 @@
 
   <main id="top">
     <section class="hero">
+      <div class="hero-bg" aria-hidden="true"></div>
       <div class="hero-copy">
-        <h1 class="appear appear--mask" style="--d:0.3s; font-size: var(--h1);">Need a <em>job</em> done?</h1>
-        <p class="lede appear appear--soft" style="--d:0.5s">Tell us what you need and a manager will confirm the details before any Butler is booked.</p>
-        <a href="tel:+12246339328" class="call-link appear appear--soft" style="--d:0.62s; margin-top:16px;">
+        <h1 style="font-size:var(--h1);">Need a <em>job</em> done?</h1>
+        <p class="lede">Tell us what you need and a manager will confirm the details before any Butler is booked.</p>
+        <a href="tel:+12246339328" class="call-link" style="margin-top:16px;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M6.6 10.8c1.4 2.8 3.8 5.2 6.6 6.6l2.2-2.2c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.8.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.6.6 3.8.1.4 0 .8-.3 1.1L6.6 10.8Z"/>
           </svg>
@@ -63,7 +65,7 @@
 
     <section class="section" style="padding-top:0;">
       <div class="form-shell reveal">
-        <form data-local-submit novalidate>
+        <form data-request-form novalidate>
           <div class="field">
             <label for="service">What do you need done?</label>
             <select id="service" name="service" required>
@@ -130,13 +132,14 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <g transform="rotate(-30 12 12)">
-            <circle cx="7.3" cy="3.2" r="1.45"/>
-            <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-            <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-            <circle cx="16.7" cy="20.8" r="1.45"/>
-          </g>
+        <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+          <polygon points="5,5 21,10 5,15" fill="#E8B33D"/>
+          <polygon points="43,5 27,10 43,15" fill="#E8B33D"/>
+          <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#E8B33D"/>
+          <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#E8B33D"/>
+          <circle cx="24" cy="31" r="1.7" fill="#171512"/>
+          <circle cx="24" cy="35" r="1.7" fill="#171512"/>
+          <circle cx="24" cy="39" r="1.7" fill="#171512"/>
         </svg>
         Community Butler
       </div>
@@ -150,7 +153,7 @@
   </footer>
 </div>
 
+<script src="/assets/store.js"></script>
 <script src="/assets/app.js"></script>
-<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
 </html>

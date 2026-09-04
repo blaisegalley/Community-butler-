@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Community Butler</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 44'%3E%3Cpolygon points='5,5 21,10 5,15' fill='%23171512'/%3E%3Cpolygon points='43,5 27,10 43,15' fill='%23171512'/%3E%3Crect x='20.5' y='7' width='7' height='6' rx='1.2' fill='%23171512'/%3E%3Cpath d='M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z' fill='%23171512'/%3E%3Ccircle cx='24' cy='31' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='35' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='39' r='1.7' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&display=swap">
+<link rel="stylesheet" href="/assets/styles.css">
+<link rel="stylesheet" href="/assets/admin.css">
+</head>
+<body style="background:#F1EDE3;color:#171512">
+
+<div id="admin-login" class="admin-login-wrap">
+  <div class="admin-login-card">
+    <a href="/" class="logo" style="justify-content:center;" aria-label="Community Butler">
+      <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+        <polygon points="5,5 21,10 5,15" fill="#171512"/>
+        <polygon points="43,5 27,10 43,15" fill="#171512"/>
+        <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#171512"/>
+        <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#171512"/>
+        <circle cx="24" cy="31" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="35" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="39" r="1.7" fill="#FAF9F6"/>
+      </svg>
+    </a>
+    <h1>Admin sign in</h1>
+    <p class="lede">Restricted to the Community Butler team.</p>
+    <div id="admin-login-error" class="admin-error"></div>
+    <form id="admin-login-form" novalidate>
+      <div class="field">
+        <label for="admin-email">Email</label>
+        <input id="admin-email" type="email" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="admin-password">Password</label>
+        <input id="admin-password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-solid btn-wide hero-btn">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<div id="admin-dashboard" class="admin-shell" hidden>
+  <div class="admin-topbar">
+    <a href="/" class="logo" aria-label="Community Butler">
+      <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+        <polygon points="5,5 21,10 5,15" fill="#171512"/>
+        <polygon points="43,5 27,10 43,15" fill="#171512"/>
+        <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#171512"/>
+        <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#171512"/>
+        <circle cx="24" cy="31" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="35" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="39" r="1.7" fill="#FAF9F6"/>
+      </svg>
+      <span>Community<span class="logo-suffix"> Butler</span> <span style="color:var(--muted); font-weight:400;">Admin</span></span>
+    </a>
+    <div class="admin-session">
+      <span>Signed in as <strong id="admin-session-email"></strong></span>
+      <button type="button" id="admin-logout" class="btn btn-ghost" style="height:34px; padding:0 14px; font-size:12.5px; box-shadow:none;">Log out</button>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat-tile"><div class="stat-value" id="stat-week">0</div><div class="stat-label">Jobs this week</div></div>
+    <div class="stat-tile"><div class="stat-value" id="stat-pending">0</div><div class="stat-label">Pending approvals</div></div>
+    <div class="stat-tile"><div class="stat-value" id="stat-butlers">0</div><div class="stat-label">Active Butlers</div></div>
+    <div class="stat-tile"><div class="stat-value" id="stat-completed">0</div><div class="stat-label">Completed this month</div></div>
+  </div>
+
+  <div class="admin-section">
+    <div class="admin-section-head">
+      <h2>Job requests</h2>
+      <span class="count" id="job-count">0 requests</span>
+    </div>
+    <div class="job-list" id="job-list"></div>
+  </div>
+
+  <div class="admin-section">
+    <div class="admin-section-head">
+      <h2>Butler roster</h2>
+      <span class="count" id="butler-count">0 Butlers</span>
+    </div>
+    <div class="butler-list" id="butler-list"></div>
+  </div>
+</div>
+
+<script src="/assets/store.js"></script>
+<script src="/assets/admin.js"></script>
+</body>
+</html>

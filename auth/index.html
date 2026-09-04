@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Get Started / Butler Sign In — Community Butler</title>
 <meta name="description" content="Sign up as a Butler or sign in to see your jobs, schedule, and pay.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cg transform='rotate(-30 12 12)'%3E%3Ccircle cx='7.3' cy='3.2' r='1.45'/%3E%3Crect x='5.5' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Crect x='14.9' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Ccircle cx='16.7' cy='20.8' r='1.45'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 44'%3E%3Cpolygon points='5,5 21,10 5,15' fill='%23171512'/%3E%3Cpolygon points='43,5 27,10 43,15' fill='%23171512'/%3E%3Crect x='20.5' y='7' width='7' height='6' rx='1.2' fill='%23171512'/%3E%3Cpath d='M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z' fill='%23171512'/%3E%3Ccircle cx='24' cy='31' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='35' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='39' r='1.7' fill='white'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&family=Instrument+Serif:ital@1&display=swap">
 <link rel="stylesheet" href="/assets/styles.css">
 </head>
-<body style="background:#000;color:#fff">
+<body style="background:#FAF9F6;color:#171512">
 
 <div class="grain" aria-hidden="true"></div>
 <div class="bg-glow" aria-hidden="true"></div>
@@ -18,26 +18,27 @@
   <div class="menu-backdrop" id="menu-backdrop" aria-hidden="true"></div>
 
   <header class="header">
-    <a href="/" class="logo appear appear--scale" style="--d:0.08s" aria-label="Community Butler">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <g transform="rotate(-30 12 12)">
-          <circle cx="7.3" cy="3.2" r="1.45"/>
-          <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-          <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-          <circle cx="16.7" cy="20.8" r="1.45"/>
-        </g>
+    <a href="/" class="logo" aria-label="Community Butler">
+      <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+        <polygon points="5,5 21,10 5,15" fill="#171512"/>
+        <polygon points="43,5 27,10 43,15" fill="#171512"/>
+        <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#171512"/>
+        <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#171512"/>
+        <circle cx="24" cy="31" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="35" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="39" r="1.7" fill="#FAF9F6"/>
       </svg>
       <span>Community<span class="logo-suffix"> Butler</span></span>
     </a>
 
     <nav id="site-nav" class="nav" aria-label="Primary">
-      <a href="/#butlers" class="nav-link appear appear--scale" style="--d:0.16s">For Butlers</a>
-      <a href="/#neighbors" class="nav-link appear appear--soft" style="--d:0.28s">For Neighbors</a>
-      <a href="/request/" class="nav-link appear appear--scale" style="--d:0.40s">Request a Job</a>
+      <a href="/#butlers" class="nav-link">For Butlers</a>
+      <a href="/#neighbors" class="nav-link">For Neighbors</a>
+      <a href="/request/" class="nav-link">Request a Job</a>
     </nav>
 
     <div class="header-right">
-      <button type="button" class="burger appear appear--scale" style="--d:0.34s" id="burger" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
+      <button type="button" class="burger" id="burger" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
         <span class="burger-bar"></span><span class="burger-bar"></span><span class="burger-bar"></span>
       </button>
     </div>
@@ -45,20 +46,21 @@
 
   <main id="top">
     <section class="hero hero-compact">
+      <div class="hero-bg" aria-hidden="true"></div>
       <div class="hero-copy">
-        <div class="auth-toggle reveal">
+        <div class="auth-toggle">
           <button type="button" data-mode="signup">Sign up</button>
           <button type="button" data-mode="signin">Sign in</button>
         </div>
 
-        <h1 id="auth-heading" class="appear appear--mask" style="--d:0.2s; font-size: var(--h2); font-weight:500;">Get started</h1>
-        <p id="auth-lede" class="lede appear appear--soft" style="--d:0.4s;">Create your Butler account to start seeing jobs near you.</p>
+        <h1 id="auth-heading" style="font-size:var(--h2); font-weight:600;">Get started</h1>
+        <p id="auth-lede" class="lede">Create your Butler account to start seeing jobs near you.</p>
       </div>
     </section>
 
     <section class="section" style="padding-top:0;">
       <div class="form-shell reveal">
-        <form data-local-submit novalidate>
+        <form data-auth-form novalidate>
           <div class="auth-only" data-mode="signup">
             <div class="field">
               <label for="su-name">Name</label>
@@ -67,6 +69,22 @@
             <div class="field">
               <label for="su-contact">Phone or email</label>
               <input id="su-contact" name="contact" type="text" autocomplete="tel" required>
+            </div>
+            <div class="field">
+              <label for="su-area">Service area</label>
+              <input id="su-area" name="area" type="text" placeholder="Zip code or neighborhood" required>
+            </div>
+            <div class="field">
+              <label>Job types you're interested in</label>
+              <div style="display:flex; flex-wrap:wrap; gap:8px 16px; padding-top:2px;">
+                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Yard work"> Yard work</label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Snow shoveling"> Snow shoveling</label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Moving help"> Moving help</label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Junk hauling"> Junk hauling</label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Cleanouts"> Cleanouts</label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Dog walking"> Dog walking</label>
+                <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; color:var(--charcoal-soft); font-weight:400;"><input type="checkbox" name="jobTypePref" value="Odd jobs"> Odd jobs</label>
+              </div>
             </div>
             <div class="field">
               <label for="su-password">Password</label>
@@ -99,13 +117,14 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <g transform="rotate(-30 12 12)">
-            <circle cx="7.3" cy="3.2" r="1.45"/>
-            <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-            <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-            <circle cx="16.7" cy="20.8" r="1.45"/>
-          </g>
+        <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+          <polygon points="5,5 21,10 5,15" fill="#E8B33D"/>
+          <polygon points="43,5 27,10 43,15" fill="#E8B33D"/>
+          <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#E8B33D"/>
+          <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#E8B33D"/>
+          <circle cx="24" cy="31" r="1.7" fill="#171512"/>
+          <circle cx="24" cy="35" r="1.7" fill="#171512"/>
+          <circle cx="24" cy="39" r="1.7" fill="#171512"/>
         </svg>
         Community Butler
       </div>
@@ -119,7 +138,7 @@
   </footer>
 </div>
 
+<script src="/assets/store.js"></script>
 <script src="/assets/app.js"></script>
-<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
 </html>

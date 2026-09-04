@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Community Butler — Pick Up Jobs, Get Jobs Done</title>
 <meta name="description" content="Community Butler connects local high school Butlers with neighbors who need yard work, snow shoveling, moving help, junk hauling, cleanouts, dog walking and odd jobs done.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cg transform='rotate(-30 12 12)'%3E%3Ccircle cx='7.3' cy='3.2' r='1.45'/%3E%3Crect x='5.5' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Crect x='14.9' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Ccircle cx='16.7' cy='20.8' r='1.45'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 44'%3E%3Cpolygon points='5,5 21,10 5,15' fill='%23171512'/%3E%3Cpolygon points='43,5 27,10 43,15' fill='%23171512'/%3E%3Crect x='20.5' y='7' width='7' height='6' rx='1.2' fill='%23171512'/%3E%3Cpath d='M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z' fill='%23171512'/%3E%3Ccircle cx='24' cy='31' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='35' r='1.7' fill='white'/%3E%3Ccircle cx='24' cy='39' r='1.7' fill='white'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&family=Instrument+Serif:ital@1&display=swap">
 <link rel="stylesheet" href="/assets/styles.css">
 </head>
-<body style="background:#000;color:#fff">
+<body style="background:#FAF9F6;color:#171512">
 
 <div class="grain" aria-hidden="true"></div>
 <div class="bg-glow" aria-hidden="true"></div>
@@ -18,30 +18,31 @@
   <div class="menu-backdrop" id="menu-backdrop" aria-hidden="true"></div>
 
   <header class="header">
-    <a href="/" class="logo appear appear--scale" style="--d:0.08s" aria-label="Community Butler">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <g transform="rotate(-30 12 12)">
-          <circle cx="7.3" cy="3.2" r="1.45"/>
-          <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-          <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-          <circle cx="16.7" cy="20.8" r="1.45"/>
-        </g>
+    <a href="/" class="logo" aria-label="Community Butler">
+      <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+        <polygon points="5,5 21,10 5,15" fill="#171512"/>
+        <polygon points="43,5 27,10 43,15" fill="#171512"/>
+        <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#171512"/>
+        <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#171512"/>
+        <circle cx="24" cy="31" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="35" r="1.7" fill="#FAF9F6"/>
+        <circle cx="24" cy="39" r="1.7" fill="#FAF9F6"/>
       </svg>
       <span>Community<span class="logo-suffix"> Butler</span></span>
     </a>
 
     <nav id="site-nav" class="nav" aria-label="Primary">
-      <a href="#butlers" class="nav-link appear appear--scale" style="--d:0.16s">For Butlers</a>
-      <a href="#neighbors" class="nav-link appear appear--soft" style="--d:0.28s">For Neighbors</a>
-      <a href="/request/" class="nav-link appear appear--scale" style="--d:0.40s">Request a Job</a>
+      <a href="#butlers" class="nav-link">For Butlers</a>
+      <a href="#neighbors" class="nav-link">For Neighbors</a>
+      <a href="/request/" class="nav-link">Request a Job</a>
       <a href="/auth/?mode=signup" class="nav-link nav-link-auth">Get Started</a>
       <a href="/auth/?mode=signin" class="nav-link nav-link-auth">Butler Sign In</a>
     </nav>
 
     <div class="header-right">
-      <a href="/auth/?mode=signin" class="btn btn-ghost appear appear--scale" style="--d:0.30s">Butler Sign In</a>
-      <a href="/auth/?mode=signup" class="btn btn-solid appear appear--scale" style="--d:0.34s">Get Started</a>
-      <button type="button" class="burger appear appear--scale" style="--d:0.34s" id="burger" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
+      <a href="/auth/?mode=signin" class="btn btn-ghost">Butler Sign In</a>
+      <a href="/auth/?mode=signup" class="btn btn-solid">Get Started</a>
+      <button type="button" class="burger" id="burger" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
         <span class="burger-bar"></span><span class="burger-bar"></span><span class="burger-bar"></span>
       </button>
     </div>
@@ -50,30 +51,29 @@
   <main id="top">
     <!-- Butler hero -->
     <section class="hero" id="butlers-hero">
+      <div class="hero-bg" aria-hidden="true"></div>
       <div class="hero-copy">
-        <div class="badge appear appear--pop" style="--d:0.22s">
-          <svg class="badge-star" viewBox="0 0 24 26" fill="white" aria-hidden="true">
+        <div class="badge">
+          <svg class="badge-star" viewBox="0 0 24 26" fill="#171512" aria-hidden="true">
             <path d="M12 2.6C12.55 2.6 12.88 3.15 13.08 4.7c.62 4.7 1.52 5.6 6.22 6.22 1.55.2 2.1.53 2.1 1.08s-.55.88-2.1 1.08c-4.7.62-5.6 1.52-6.22 6.22-.2 1.55-.53 2.1-1.08 2.1s-.88-.55-1.08-2.1c-.62-4.7-1.52-5.6-6.22-6.22C3.15 12.88 2.6 12.55 2.6 12s.55-.88 2.1-1.08c4.7-.62 5.6-1.52 6.22-6.22C11.12 3.15 11.45 2.6 12 2.6Z"/>
           </svg>
           For local high school Butlers
         </div>
 
-        <h1>
-          <span class="appear appear--mask" style="--d:0.42s; display:block;">Pick up jobs.</span>
-          <span class="appear appear--mask" style="--d:0.62s; display:block;">Keep your <em>schedule</em>.</span>
-        </h1>
+        <h1>Pick up jobs.<br>Keep your <em>schedule</em>.</h1>
 
-        <p class="lede appear appear--soft" style="--d:0.82s">See available work near you, accept the jobs that fit your schedule, and track everything — from first message to final payout — in one place.</p>
+        <p class="lede">See available work near you, accept the jobs that fit your schedule, and track everything — from first message to final payout — in one place.</p>
 
         <div class="hero-actions">
-          <a href="/auth/?mode=signup" class="btn btn-solid hero-btn appear appear--btn" style="--d:0.96s">Get Started</a>
-          <a href="/auth/?mode=signin" class="btn btn-ghost hero-btn appear appear--side" style="--d:1.10s">Butler Sign In</a>
+          <a href="/auth/?mode=signup" class="btn btn-solid hero-btn">Get Started</a>
+          <a href="/auth/?mode=signin" class="btn btn-ghost hero-btn">Butler Sign In</a>
         </div>
       </div>
     </section>
 
     <!-- Neighbor / customer hero -->
     <section class="hero hero-compact section-border-top reveal" id="neighbors">
+      <div class="hero-bg" aria-hidden="true"></div>
       <div class="hero-copy">
         <h2 class="h2">Need a job done?</h2>
         <p class="lede">Snow shoveling, lawn care, moving help and more — tell us what you need and a manager will line up a Butler.</p>
@@ -156,39 +156,40 @@
       </div>
     </section>
 
-    <!-- Photo / work illustration section -->
-    <section class="section section-border-top">
+    <!-- Photo section: real job photos -->
+    <section class="section section-border-top section-alt">
       <div class="section-head reveal">
         <span class="eyebrow">Butlers in action</span>
         <h2 class="h2">Real jobs, done right</h2>
       </div>
 
+      <!--
+        TODO: swap each .photo-placeholder below for a real <img> once the
+        job photos are available, e.g.:
+        <img src="/assets/photos/couch-move.jpg" alt="Butler moving a large sectional couch out of a garage">
+        Keep the .photo-fade + .photo-caption siblings as-is.
+      -->
       <div class="photo-grid">
         <div class="photo-card reveal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 20V9l8-5 8 5v11"/>
-            <path d="M9 20v-6h6v6"/>
-            <path d="M4 9l8 5 8-5"/>
-          </svg>
-          <span>Assembling furniture</span>
+          <div class="photo-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+          </div>
+          <div class="photo-fade"></div>
+          <span class="photo-caption">Moving a sectional couch out of a garage</span>
         </div>
         <div class="photo-card reveal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="3.5" y="8.5" width="12" height="9" rx="1.2"/>
-            <path d="M15.5 11.5h2.6L21 14.6v3H15.5"/>
-            <circle cx="7.5" cy="18.5" r="1.6"/>
-            <circle cx="17.5" cy="18.5" r="1.6"/>
-          </svg>
-          <span>Delivering &amp; setting up</span>
+          <div class="photo-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+          </div>
+          <div class="photo-fade"></div>
+          <span class="photo-caption">Junk hauling &amp; cleanout at the dumpster</span>
         </div>
         <div class="photo-card reveal">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M12 3v9"/>
-            <path d="M8 8l4-4 4 4"/>
-            <path d="M5 14c1.5 3 4 5 7 5s5.5-2 7-5"/>
-            <path d="M5 20h14"/>
-          </svg>
-          <span>Yard work &amp; cleanouts</span>
+          <div class="photo-placeholder">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7l1.5-2.5h5L16 7"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+          </div>
+          <div class="photo-fade"></div>
+          <span class="photo-caption">Moving a tub onto the porch, two-Butler job</span>
         </div>
       </div>
     </section>
@@ -209,13 +210,14 @@
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <g transform="rotate(-30 12 12)">
-            <circle cx="7.3" cy="3.2" r="1.45"/>
-            <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-            <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
-            <circle cx="16.7" cy="20.8" r="1.45"/>
-          </g>
+        <svg class="mark" viewBox="0 0 48 44" aria-hidden="true">
+          <polygon points="5,5 21,10 5,15" fill="#E8B33D"/>
+          <polygon points="43,5 27,10 43,15" fill="#E8B33D"/>
+          <rect x="20.5" y="7" width="7" height="6" rx="1.2" fill="#E8B33D"/>
+          <path d="M4,41 L4,21 Q4,16 9,16 L18,16 L24,27 L30,16 L39,16 Q44,16 44,21 L44,41 Z" fill="#E8B33D"/>
+          <circle cx="24" cy="31" r="1.7" fill="#171512"/>
+          <circle cx="24" cy="35" r="1.7" fill="#171512"/>
+          <circle cx="24" cy="39" r="1.7" fill="#171512"/>
         </svg>
         Community Butler
       </div>
@@ -229,7 +231,7 @@
   </footer>
 </div>
 
+<script src="/assets/store.js"></script>
 <script src="/assets/app.js"></script>
-<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
 </html>
