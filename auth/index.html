@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get Started / Butler Sign In — Community Butler</title>
+<meta name="description" content="Sign up as a Butler or sign in to see your jobs, schedule, and pay.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cg transform='rotate(-30 12 12)'%3E%3Ccircle cx='7.3' cy='3.2' r='1.45'/%3E%3Crect x='5.5' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Crect x='14.9' y='4.7' width='3.6' height='14.6' rx='1.8'/%3E%3Ccircle cx='16.7' cy='20.8' r='1.45'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900&family=Instrument+Serif:ital@1&display=swap">
+<link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body style="background:#000;color:#fff">
+
+<div class="grain" aria-hidden="true"></div>
+<div class="bg-glow" aria-hidden="true"></div>
+
+<div class="page">
+  <div class="menu-backdrop" id="menu-backdrop" aria-hidden="true"></div>
+
+  <header class="header">
+    <a href="/" class="logo appear appear--scale" style="--d:0.08s" aria-label="Community Butler">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <g transform="rotate(-30 12 12)">
+          <circle cx="7.3" cy="3.2" r="1.45"/>
+          <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
+          <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
+          <circle cx="16.7" cy="20.8" r="1.45"/>
+        </g>
+      </svg>
+      <span>Community<span class="logo-suffix"> Butler</span></span>
+    </a>
+
+    <nav id="site-nav" class="nav" aria-label="Primary">
+      <a href="/#butlers" class="nav-link appear appear--scale" style="--d:0.16s">For Butlers</a>
+      <a href="/#neighbors" class="nav-link appear appear--soft" style="--d:0.28s">For Neighbors</a>
+      <a href="/request/" class="nav-link appear appear--scale" style="--d:0.40s">Request a Job</a>
+    </nav>
+
+    <div class="header-right">
+      <button type="button" class="burger appear appear--scale" style="--d:0.34s" id="burger" aria-controls="site-nav" aria-expanded="false" aria-label="Open menu">
+        <span class="burger-bar"></span><span class="burger-bar"></span><span class="burger-bar"></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero hero-compact">
+      <div class="hero-copy">
+        <div class="auth-toggle reveal">
+          <button type="button" data-mode="signup">Sign up</button>
+          <button type="button" data-mode="signin">Sign in</button>
+        </div>
+
+        <h1 id="auth-heading" class="appear appear--mask" style="--d:0.2s; font-size: var(--h2); font-weight:500;">Get started</h1>
+        <p id="auth-lede" class="lede appear appear--soft" style="--d:0.4s;">Create your Butler account to start seeing jobs near you.</p>
+      </div>
+    </section>
+
+    <section class="section" style="padding-top:0;">
+      <div class="form-shell reveal">
+        <form data-local-submit novalidate>
+          <div class="auth-only" data-mode="signup">
+            <div class="field">
+              <label for="su-name">Name</label>
+              <input id="su-name" name="name" type="text" autocomplete="name" required>
+            </div>
+            <div class="field">
+              <label for="su-contact">Phone or email</label>
+              <input id="su-contact" name="contact" type="text" autocomplete="tel" required>
+            </div>
+            <div class="field">
+              <label for="su-password">Password</label>
+              <input id="su-password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+          </div>
+
+          <div class="auth-only" data-mode="signin">
+            <div class="field">
+              <label for="si-contact">Phone or email</label>
+              <input id="si-contact" name="contact" type="text" autocomplete="username" required>
+            </div>
+            <div class="field">
+              <label for="si-password">Password</label>
+              <input id="si-password" name="password" type="password" autocomplete="current-password" required>
+            </div>
+          </div>
+
+          <button type="submit" id="auth-submit" class="btn btn-solid btn-wide hero-btn">Create account</button>
+        </form>
+
+        <div class="form-success" role="status">
+          <h3>You're in</h3>
+          <p>This is a demo flow — account creation isn't wired up to a backend yet, but your details looked good.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <g transform="rotate(-30 12 12)">
+            <circle cx="7.3" cy="3.2" r="1.45"/>
+            <rect x="5.5" y="4.7" width="3.6" height="14.6" rx="1.8"/>
+            <rect x="14.9" y="4.7" width="3.6" height="14.6" rx="1.8"/>
+            <circle cx="16.7" cy="20.8" r="1.45"/>
+          </g>
+        </svg>
+        Community Butler
+      </div>
+      <div class="footer-links">
+        <a href="mailto:thecommunitybutler@gmail.com">thecommunitybutler@gmail.com</a>
+        <a href="tel:+12246339328">(224) 633-9328</a>
+        <a href="https://groupme.com/join_group/116716938/yCXfMLwo" target="_blank" rel="noopener">Join the Butler GroupMe</a>
+      </div>
+      <p class="footer-copy">© <span id="year"></span> Community Butler. All rights reserved.</p>
+    </div>
+  </footer>
+</div>
+
+<script src="/assets/app.js"></script>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
+</body>
+</html>
