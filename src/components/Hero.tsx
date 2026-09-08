@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import Animate from '@/components/Animate';
 import { LogoMark, Wordmark } from '@/components/Logo';
+import Scene3D from '@/components/Scene3D';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 export default function Hero() {
+  // Not just CSS-hidden below lg: the WebGL context and render loop are
+  // genuinely never created on smaller/mobile viewports.
+  const showScene = useMediaQuery('(min-width: 1024px)');
+
   return (
     <section className="relative w-full h-screen overflow-hidden bg-[#0B0B0C]">
       <img
@@ -12,6 +18,17 @@ export default function Hero() {
         alt=""
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C] via-[#0B0B0C]/60 to-[#0B0B0C]/20" />
+
+      {/* Decorative Three.js accent — silver icosahedron, never mounted below lg */}
+      {showScene && (
+        <Animate
+          delay={1100}
+          direction="scale"
+          className="absolute top-[76px] right-[64px] w-[240px] h-[240px] xl:w-[300px] xl:h-[300px] z-[5] pointer-events-none"
+        >
+          <Scene3D className="w-full h-full" />
+        </Animate>
+      )}
 
       <div className="relative z-10 h-full flex flex-col">
         <Nav />
