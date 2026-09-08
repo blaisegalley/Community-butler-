@@ -33,12 +33,17 @@ export interface Job {
   assignedAt: string | null;
   completedAt: string | null;
   acceptedBySelf?: boolean;
+  // Where this request came from — captured from ?utm_source/?utm_campaign on
+  // /request at submit time. "direct" when neither param was present.
+  source: string;
+  utmCampaign: string;
 }
 
 export type NewJobInput = Pick<
   Job,
   'service' | 'name' | 'phone' | 'email' | 'address' | 'date' | 'budget' | 'details'
->;
+> &
+  Partial<Pick<Job, 'source' | 'utmCampaign'>>;
 
 export interface ButlerNotification {
   message: string;
@@ -89,11 +94,11 @@ const ADMIN_ALLOWLIST: AdminAccount[] = [
   { email: 'admin3@communitybutler.com', password: 'Butler-Admin-3!' },
 ];
 
-function uid(): string {
+export function uid(): string {
   return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
-function read<T>(key: string, fallback: T): T {
+export function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -102,7 +107,7 @@ function read<T>(key: string, fallback: T): T {
   }
 }
 
-function write<T>(key: string, value: T): void {
+export function write<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -126,6 +131,8 @@ export function addJob(data: NewJobInput): Job {
     assignedButlerId: null,
     assignedAt: null,
     completedAt: null,
+    source: 'direct',
+    utmCampaign: '',
     ...data,
   };
   jobs.unshift(job);

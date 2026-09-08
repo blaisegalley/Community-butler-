@@ -15,6 +15,8 @@ import {
   rejectJob,
 } from '@/lib/store';
 import { inputClass, labelClass, primaryBtn } from '@/components/FormControls';
+import { generateDraftsForJob } from '@/lib/marketingWorkflow';
+import MarketingTab from './MarketingTab';
 
 export default function AdminPage() {
   const [session, setSession] = useState(() => getAdminSession());
@@ -102,9 +104,12 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+type AdminTab = 'overview' | 'marketing';
+
 function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => void }) {
   const [, forceRender] = useState(0);
   const refresh = () => forceRender((n) => n + 1);
+  const [tab, setTab] = useState<AdminTab>('overview');
 
   const jobs = getJobs()
     .slice()
@@ -131,44 +136,64 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-8">
-          <StatTile value={jobsThisWeek} label="Jobs this week" />
-          <StatTile value={pending} label="Pending approvals" />
-          <StatTile value={butlers.length} label="Active Butlers" />
-          <StatTile value={completedThisMonth} label="Completed this month" />
+        <div className="flex gap-2 mb-7">
+          {(['overview', 'marketing'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`h-[34px] px-4 rounded-[8px] text-[13px] font-medium transition-colors ${
+                tab === t ? 'bg-[#0B0B0C] text-white' : 'border border-black/15 text-[#17161B] hover:bg-black/5'
+              }`}
+            >
+              {t === 'overview' ? 'Overview' : 'Marketing'}
+            </button>
+          ))}
         </div>
 
-        <section className="mb-9">
-          <div className="flex items-baseline justify-between mb-3.5">
-            <h2 className="text-[17px] font-bold text-[#17161B]">Job requests</h2>
-            <span className="text-[12.5px] text-black/45">{jobs.length} {jobs.length === 1 ? 'request' : 'requests'}</span>
-          </div>
-          {jobs.length ? (
-            <div className="flex flex-col gap-2.5">
-              {jobs.map((job) => (
-                <JobCard key={job.id} job={job} butlers={butlers} onChange={refresh} />
-              ))}
+        {tab === 'overview' ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-8">
+              <StatTile value={jobsThisWeek} label="Jobs this week" />
+              <StatTile value={pending} label="Pending approvals" />
+              <StatTile value={butlers.length} label="Active Butlers" />
+              <StatTile value={completedThisMonth} label="Completed this month" />
             </div>
-          ) : (
-            <EmptyState text="No job requests yet — submissions from /request will appear here." />
-          )}
-        </section>
 
-        <section>
-          <div className="flex items-baseline justify-between mb-3.5">
-            <h2 className="text-[17px] font-bold text-[#17161B]">Butler roster</h2>
-            <span className="text-[12.5px] text-black/45">{butlers.length} {butlers.length === 1 ? 'Butler' : 'Butlers'}</span>
-          </div>
-          {butlers.length ? (
-            <div className="flex flex-col gap-2.5">
-              {butlers.map((b) => (
-                <ButlerCard key={b.id} butler={b} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState text="No Butlers signed up yet — sign-ups from /auth will appear here." />
-          )}
-        </section>
+            <section className="mb-9">
+              <div className="flex items-baseline justify-between mb-3.5">
+                <h2 className="text-[17px] font-bold text-[#17161B]">Job requests</h2>
+                <span className="text-[12.5px] text-black/45">{jobs.length} {jobs.length === 1 ? 'request' : 'requests'}</span>
+              </div>
+              {jobs.length ? (
+                <div className="flex flex-col gap-2.5">
+                  {jobs.map((job) => (
+                    <JobCard key={job.id} job={job} butlers={butlers} onChange={refresh} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState text="No job requests yet — submissions from /request will appear here." />
+              )}
+            </section>
+
+            <section>
+              <div className="flex items-baseline justify-between mb-3.5">
+                <h2 className="text-[17px] font-bold text-[#17161B]">Butler roster</h2>
+                <span className="text-[12.5px] text-black/45">{butlers.length} {butlers.length === 1 ? 'Butler' : 'Butlers'}</span>
+              </div>
+              {butlers.length ? (
+                <div className="flex flex-col gap-2.5">
+                  {butlers.map((b) => (
+                    <ButlerCard key={b.id} butler={b} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState text="No Butlers signed up yet — sign-ups from /auth will appear here." />
+              )}
+            </section>
+          </>
+        ) : (
+          <MarketingTab jobs={jobs} />
+        )}
       </div>
     </div>
   );
@@ -193,6 +218,8 @@ function EmptyState({ text }: { text: string }) {
 
 function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onChange: () => void }) {
   const [selectedButler, setSelectedButler] = useState(butlers[0]?.id ?? '');
+  const [draftingPosts, setDraftingPosts] = useState(false);
+  const [draftError, setDraftError] = useState('');
   const assignedButler = butlers.find((b) => b.id === job.assignedButlerId);
 
   function handleApprove() {
@@ -217,6 +244,20 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
   function handleComplete() {
     completeJob(job.id);
     onChange();
+    handleGenerateDrafts();
+  }
+  function handleGenerateDrafts() {
+    setDraftingPosts(true);
+    setDraftError('');
+    generateDraftsForJob(job)
+      .catch((err) => {
+        setDraftError(
+          err instanceof Error
+            ? `Couldn't auto-draft social posts (${err.message}) — try again from the Marketing tab.`
+            : "Couldn't auto-draft social posts — try again from the Marketing tab.",
+        );
+      })
+      .finally(() => setDraftingPosts(false));
   }
 
   return (
@@ -275,6 +316,18 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
           <button onClick={handleComplete} className="h-[32px] px-3.5 rounded-[8px] bg-[#0B0B0C] text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity">
             Mark completed
           </button>
+        </div>
+      )}
+      {job.status === 'Completed' && (
+        <div className="mt-3">
+          <button
+            onClick={handleGenerateDrafts}
+            disabled={draftingPosts}
+            className="h-[32px] px-3.5 rounded-[8px] border border-black/15 text-[#17161B] text-[12.5px] font-medium hover:bg-black/5 transition-colors disabled:opacity-50"
+          >
+            {draftingPosts ? 'Drafting…' : 'Generate post drafts'}
+          </button>
+          {draftError && <div className="text-[12px] text-[#8c2f1c] mt-2">{draftError}</div>}
         </div>
       )}
     </div>

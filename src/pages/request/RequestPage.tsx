@@ -7,8 +7,20 @@ import { fieldWrap, inputClass, labelClass, primaryBtn, selectClass, textareaCla
 
 const SERVICES = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanout', 'Dog walking', 'Odd job'];
 
+// Captured once per page load from ?utm_source=...&utm_campaign=... — whatever
+// social/ad link brought the visitor here. Falls back to "direct" if absent,
+// so every job request can be attributed to a channel for the Marketing tab.
+function captureAttribution() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    source: params.get('utm_source')?.trim() || 'direct',
+    utmCampaign: params.get('utm_campaign')?.trim() || '',
+  };
+}
+
 export default function RequestPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [attribution] = useState(captureAttribution);
   const [form, setForm] = useState({
     service: '',
     name: '',
@@ -27,7 +39,7 @@ export default function RequestPage() {
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!e.currentTarget.reportValidity()) return;
-    addJob(form);
+    addJob({ ...form, ...attribution });
     setSubmitted(true);
   }
 
