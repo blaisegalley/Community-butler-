@@ -1,0 +1,128 @@
+import { FormEvent, useState } from 'react';
+import Animate from '@/components/Animate';
+import SiteHeader from '@/components/SiteHeader';
+import SiteFooter from '@/components/SiteFooter';
+import { addJob } from '@/lib/store';
+import { fieldWrap, inputClass, labelClass, primaryBtn, selectClass, textareaClass } from '@/components/FormControls';
+
+const SERVICES = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanout', 'Dog walking', 'Odd job'];
+
+export default function RequestPage() {
+  const [submitted, setSubmitted] = useState(false);
+  const [form, setForm] = useState({
+    service: '',
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    date: '',
+    budget: '',
+    details: '',
+  });
+
+  function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!e.currentTarget.reportValidity()) return;
+    addJob(form);
+    setSubmitted(true);
+  }
+
+  return (
+    <div className="min-h-screen bg-[#FBF5EC] flex flex-col">
+      <SiteHeader />
+
+      <main className="flex-1 w-full max-w-[720px] mx-auto px-5 sm:px-8 py-10 sm:py-14">
+        <Animate delay={0} direction="up">
+          <h1 className="text-[#17161B] text-[32px] sm:text-[44px] font-normal leading-[1.05] mb-3">
+            Need a <em className="not-italic text-[#71757C]">job</em> done?
+          </h1>
+          <p className="text-[#55545C] text-[16px] sm:text-[18px] leading-[1.4] mb-2">
+            Tell us what you need and a manager will confirm the details before any Butler is booked.
+          </p>
+          <a href="tel:+12246339328" className="inline-flex items-center gap-2 text-[#17161B] text-[14.5px] font-medium mb-10">
+            Or call us (224) 633-9328
+          </a>
+        </Animate>
+
+        {submitted ? (
+          <Animate delay={0} direction="up">
+            <div className="rounded-[16px] border border-black/10 bg-white p-6 sm:p-8 text-center">
+              <h3 className="text-[#17161B] text-[18px] font-semibold mb-1">Request sent</h3>
+              <p className="text-[#55545C] text-[14.5px]">
+                Thanks — a manager will review your request and follow up shortly. Nothing has been charged.
+              </p>
+            </div>
+          </Animate>
+        ) : (
+          <Animate delay={150} direction="up">
+            <form onSubmit={handleSubmit} noValidate>
+              <div className={fieldWrap}>
+                <label className={labelClass} htmlFor="service">What do you need done?</label>
+                <select
+                  id="service"
+                  required
+                  className={selectClass}
+                  value={form.service}
+                  onChange={(e) => update('service', e.target.value)}
+                >
+                  <option value="" disabled>Select a service</option>
+                  {SERVICES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div className={fieldWrap + ' mb-0'}>
+                  <label className={labelClass} htmlFor="name">Your name</label>
+                  <input id="name" required className={inputClass} value={form.name} onChange={(e) => update('name', e.target.value)} />
+                </div>
+                <div className={fieldWrap + ' mb-0'}>
+                  <label className={labelClass} htmlFor="phone">Your phone number</label>
+                  <input id="phone" type="tel" required className={inputClass} value={form.phone} onChange={(e) => update('phone', e.target.value)} />
+                </div>
+              </div>
+
+              <div className={fieldWrap}>
+                <label className={labelClass} htmlFor="email">Email <span className="text-black/40 font-normal">(optional)</span></label>
+                <input id="email" type="email" className={inputClass} value={form.email} onChange={(e) => update('email', e.target.value)} />
+              </div>
+
+              <div className={fieldWrap}>
+                <label className={labelClass} htmlFor="address">Address or area</label>
+                <input id="address" required className={inputClass} value={form.address} onChange={(e) => update('address', e.target.value)} />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                <div className={fieldWrap + ' mb-0'}>
+                  <label className={labelClass} htmlFor="date">Preferred date <span className="text-black/40 font-normal">(optional)</span></label>
+                  <input id="date" type="date" className={inputClass} value={form.date} onChange={(e) => update('date', e.target.value)} />
+                </div>
+                <div className={fieldWrap + ' mb-0'}>
+                  <label className={labelClass} htmlFor="budget">Budget in dollars <span className="text-black/40 font-normal">(optional)</span></label>
+                  <input id="budget" type="number" min={0} placeholder="$" className={inputClass} value={form.budget} onChange={(e) => update('budget', e.target.value)} />
+                </div>
+              </div>
+
+              <div className={fieldWrap}>
+                <label className={labelClass} htmlFor="details">Details</label>
+                <textarea id="details" required placeholder="Tell us more about the job..." className={textareaClass} value={form.details} onChange={(e) => update('details', e.target.value)} />
+              </div>
+
+              <button type="submit" className={primaryBtn}>Send request</button>
+              <p className="text-black/45 text-[13px] text-center mt-4">
+                Nothing is charged now — a manager approves your request first.
+              </p>
+            </form>
+          </Animate>
+        )}
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+}
