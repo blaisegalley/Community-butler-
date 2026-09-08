@@ -82,9 +82,9 @@ const KEYS = {
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
-// Replace with the real 3 admin accounts before launch.
+// Replace the remaining placeholders with the other real admin accounts.
 const ADMIN_ALLOWLIST: AdminAccount[] = [
-  { email: 'admin1@communitybutler.com', password: 'Butler-Admin-1!' },
+  { email: 'pbgalley@icloud.com', password: 'Butler-PBG-1!' },
   { email: 'admin2@communitybutler.com', password: 'Butler-Admin-2!' },
   { email: 'admin3@communitybutler.com', password: 'Butler-Admin-3!' },
 ];
