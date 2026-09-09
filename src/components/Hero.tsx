@@ -1,4 +1,3 @@
-import { LogoMark, Wordmark } from '@/components/Logo';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import FadeIn from '@/components/FadeIn';
 
@@ -8,9 +7,30 @@ const NAV_LINKS = [
   { label: 'Our Story', href: '#story' },
 ];
 
+// Faceted bowtie mark — used only in the hero nav.
+function BowtieMark({ className = '' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 60" className={className} fill="none">
+      <polygon points="4,6 4,54 44,30" fill="url(#bowtie-left)" />
+      <polygon points="96,6 96,54 56,30" fill="url(#bowtie-right)" />
+      <rect x="42" y="24" width="16" height="12" rx="3" fill="#0B0F0D" />
+      <defs>
+        <linearGradient id="bowtie-left" x1="4" y1="6" x2="44" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F4EEE3" />
+          <stop offset="1" stopColor="#8A9089" />
+        </linearGradient>
+        <linearGradient id="bowtie-right" x1="96" y1="6" x2="56" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F4EEE3" />
+          <stop offset="1" stopColor="#8A9089" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
 export default function Hero() {
   return (
-    <section className="relative w-full h-screen overflow-hidden bg-black flex flex-col">
+    <section className="relative w-full h-screen overflow-hidden bg-ink flex flex-col">
       <video
         className="absolute inset-0 w-full h-full object-cover"
         src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260403_050628_c4e32401-fab4-4a27-b7a8-6e9291cd5959.mp4"
@@ -23,8 +43,10 @@ export default function Hero() {
       <div className="relative z-10 flex flex-col h-full">
         <nav className="px-6 md:px-12 lg:px-16 pt-6 flex items-center justify-between">
           <a href="/" className="flex items-center gap-2.5 text-white">
-            <LogoMark />
-            <Wordmark className="text-white" />
+            <BowtieMark className="w-[30px] h-[18px] sm:w-[34px] sm:h-[20px]" />
+            <span className="text-[15px] sm:text-[20px] font-medium leading-none tracking-[-0.01em] uppercase whitespace-nowrap">
+              Community Butler
+            </span>
           </a>
 
           <div className="hidden md:flex liquid-glass rounded-full items-center gap-8 px-8 py-3">
@@ -32,7 +54,7 @@ export default function Hero() {
               <a
                 key={link.label}
                 href={link.href}
-                className="text-white text-sm font-medium hover:text-gray-300 transition-colors"
+                className="text-white text-[13px] font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors"
               >
                 {link.label}
               </a>
@@ -41,7 +63,7 @@ export default function Hero() {
 
           <a
             href="/request/"
-            className="liquid-glass rounded-full px-6 py-3 text-white text-sm font-medium hover:text-gray-300 transition-colors"
+            className="rounded-full px-6 py-3 bg-sand text-ink text-[13px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:bg-white transition-colors"
           >
             Post a Job
           </a>
@@ -52,7 +74,7 @@ export default function Hero() {
             <div>
               <AnimatedHeading
                 text={'Real jobs, done\nby butlers next door.'}
-                className="text-white text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal mb-4"
+                className="text-white text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal leading-[0.95] mb-4"
                 style={{ letterSpacing: '-0.04em' }}
                 initialDelay={200}
                 charDelay={30}
@@ -60,7 +82,7 @@ export default function Hero() {
               />
 
               <FadeIn delay={800} duration={1000}>
-                <p className="text-gray-300 text-base md:text-lg max-w-md mb-8">
+                <p className="text-silver text-base md:text-lg max-w-md mb-8">
                   Community Butler connects busy neighbors with trained, motivated
                   high-school butlers for the everyday tasks that pile up.
                 </p>
@@ -70,13 +92,13 @@ export default function Hero() {
                 <div className="flex flex-wrap gap-4">
                   <a
                     href="/request/"
-                    className="bg-white text-black rounded-full px-6 py-3 text-sm font-medium hover:bg-gray-200 transition-colors"
+                    className="bg-sand text-ink rounded-full px-6 py-3 text-[13px] font-medium uppercase tracking-[0.04em] hover:bg-white transition-colors"
                   >
                     Post a Job
                   </a>
                   <a
                     href="/auth/?mode=signup"
-                    className="liquid-glass rounded-full px-6 py-3 text-white text-sm font-medium hover:text-gray-300 transition-colors"
+                    className="liquid-glass rounded-full px-6 py-3 text-white text-[13px] font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors"
                   >
                     Become a Butler
                   </a>
@@ -85,8 +107,11 @@ export default function Hero() {
             </div>
 
             <FadeIn delay={1400} duration={1000} className="hidden lg:flex justify-end">
-              <div className="liquid-glass rounded-2xl px-6 py-4 text-white text-sm">
-                Yard Work. Moving Help. Errands.
+              <div className="liquid-glass rounded-2xl px-6 py-4" style={{ background: 'rgba(31,51,39,0.45)' }}>
+                <p className="text-silver text-[10px] font-semibold uppercase tracking-[0.12em] mb-1">
+                  Services
+                </p>
+                <p className="text-white text-sm">Yard Work. Moving Help. Errands.</p>
               </div>
             </FadeIn>
           </div>
