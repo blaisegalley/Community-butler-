@@ -1,10 +1,11 @@
 import { LogoMark, Wordmark } from '@/components/Logo';
+import { withBase } from '@/lib/url';
 
 export default function SiteFooter() {
   return (
     <footer className="w-full bg-[#0B0B0C] text-white/70 py-10 sm:py-12">
       <div className="w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px] flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
-        <a href="/" className="flex items-center gap-2.5 text-[#C7C9CC]">
+        <a href={withBase('')} className="flex items-center gap-2.5 text-[#C7C9CC]">
           <LogoMark className="text-[#C7C9CC]" />
           <Wordmark className="text-white" />
         </a>

@@ -1,9 +1,10 @@
 import AnimatedHeading from '@/components/AnimatedHeading';
 import FadeIn from '@/components/FadeIn';
+import { withBase } from '@/lib/url';
 
 const NAV_LINKS = [
-  { label: 'For Neighbors', href: '/request/' },
-  { label: 'For Butlers', href: '/auth/' },
+  { label: 'For Neighbors', href: withBase('request/') },
+  { label: 'For Butlers', href: withBase('auth/') },
   { label: 'Our Story', href: '#story' },
 ];
 
@@ -42,7 +43,7 @@ export default function Hero() {
 
       <div className="relative z-10 flex flex-col h-full">
         <nav className="px-6 md:px-12 lg:px-16 pt-6 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5 text-white">
+          <a href={withBase('')} className="flex items-center gap-2.5 text-white">
             <BowtieMark className="w-[30px] h-[18px] sm:w-[34px] sm:h-[20px]" />
             <span className="text-[15px] sm:text-[20px] font-medium leading-none tracking-[-0.01em] uppercase whitespace-nowrap">
               Community Butler
@@ -62,7 +63,7 @@ export default function Hero() {
           </div>
 
           <a
-            href="/request/"
+            href={withBase('request/')}
             className="rounded-full px-6 py-3 bg-sand text-ink text-[13px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:bg-white transition-colors"
           >
             Post a Job
@@ -91,13 +92,13 @@ export default function Hero() {
               <FadeIn delay={1200} duration={1000}>
                 <div className="flex flex-wrap gap-4">
                   <a
-                    href="/request/"
+                    href={withBase('request/')}
                     className="bg-sand text-ink rounded-full px-6 py-3 text-[13px] font-medium uppercase tracking-[0.04em] hover:bg-white transition-colors"
                   >
                     Post a Job
                   </a>
                   <a
-                    href="/auth/?mode=signup"
+                    href={withBase('auth/?mode=signup')}
                     className="liquid-glass rounded-full px-6 py-3 text-white text-[13px] font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors"
                   >
                     Become a Butler

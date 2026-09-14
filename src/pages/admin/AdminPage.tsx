@@ -15,6 +15,7 @@ import {
   rejectJob,
 } from '@/lib/store';
 import { inputClass, labelClass, primaryBtn } from '@/components/FormControls';
+import { withBase } from '@/lib/url';
 
 export default function AdminPage() {
   const [session, setSession] = useState(() => getAdminSession());
@@ -119,7 +120,7 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
     <div className="min-h-screen bg-[#F1EDE6]">
       <div className="max-w-[1080px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between gap-3 flex-wrap pb-5 mb-6 border-b border-black/10">
-          <a href="/" className="flex items-center gap-2.5 text-[#17161B] font-semibold text-[15px]">
+          <a href={withBase('')} className="flex items-center gap-2.5 text-[#17161B] font-semibold text-[15px]">
             <LogoMark />
             Community Butler <span className="text-black/40 font-normal">Admin</span>
           </a>
