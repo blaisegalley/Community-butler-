@@ -32,13 +32,10 @@ function BowtieMark({ className = '' }: { className?: string }) {
 export default function Hero() {
   return (
     <section className="relative w-full h-screen overflow-hidden bg-ink flex flex-col">
-      <video
+      <img
         className="absolute inset-0 w-full h-full object-cover"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260403_050628_c4e32401-fab4-4a27-b7a8-6e9291cd5959.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
+        src="https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260915_182328_87e5d876-76d7-4620-a036-6bbc07c7f14c.png"
+        alt=""
       />
 
       <div className="relative z-10 flex flex-col h-full">
@@ -93,13 +90,13 @@ export default function Hero() {
                 <div className="flex flex-wrap gap-4">
                   <a
                     href={withBase('request/')}
-                    className="bg-sand text-ink rounded-full px-6 py-3 text-[13px] font-medium uppercase tracking-[0.04em] hover:bg-white transition-colors"
+                    className="bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] hover:bg-white transition-colors"
                   >
                     Post a Job
                   </a>
                   <a
                     href={withBase('auth/?mode=signup')}
-                    className="liquid-glass rounded-full px-6 py-3 text-white text-[13px] font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors"
+                    className="liquid-glass rounded-full px-8 py-4 text-white text-sm font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors"
                   >
                     Become a Butler
                   </a>

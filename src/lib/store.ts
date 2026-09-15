@@ -10,8 +10,6 @@
  *     file's source can see the checking logic. Do not reuse these
  *     passwords anywhere real, and swap in real backend auth (and a
  *     real database) before this becomes a real operational tool.
- *
- * Update ADMIN_ALLOWLIST below with the real admin emails/passwords.
  */
 
 export type JobStatus = 'New' | 'Approved' | 'Assigned' | 'Completed' | 'Rejected';
@@ -33,6 +31,8 @@ export interface Job {
   assignedAt: string | null;
   completedAt: string | null;
   acceptedBySelf?: boolean;
+  /** 1-5 admin-given rating of the Butler's performance on this job. */
+  rating?: number;
 }
 
 export type NewJobInput = Pick<
@@ -58,9 +58,24 @@ export interface Butler {
 
 export type NewButlerInput = Pick<Butler, 'name' | 'contact' | 'serviceArea' | 'jobTypePrefs'>;
 
-interface AdminAccount {
+export interface ButlerStats {
+  jobsAssigned: number;
+  jobsCompleted: number;
+  avgRating: number | null;
+  ratedJobs: number;
+}
+
+export interface Admin {
+  id: string;
   email: string;
   password: string;
+  addedAt: string;
+}
+
+export interface ActivityEntry {
+  id: string;
+  message: string;
+  at: string;
 }
 
 interface AdminSession {
@@ -78,16 +93,12 @@ const KEYS = {
   butlers: 'cb.butlers.v1',
   session: 'cb.adminSession.v1',
   butlerSession: 'cb.butlerSession.v1',
+  admins: 'cb.admins.v1',
+  activity: 'cb.activity.v1',
 } as const;
 
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-
-// Replace the remaining placeholders with the other real admin accounts.
-const ADMIN_ALLOWLIST: AdminAccount[] = [
-  { email: 'pbgalley@icloud.com', password: 'Butler-PBG-1!' },
-  { email: 'admin2@communitybutler.com', password: 'Butler-Admin-2!' },
-  { email: 'admin3@communitybutler.com', password: 'Butler-Admin-3!' },
-];
+const ACTIVITY_LIMIT = 200;
 
 function uid(): string {
   return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
@@ -110,6 +121,20 @@ function write<T>(key: string, value: T): void {
   }
 }
 
+// ---------- activity log ----------
+// A running feed of admin-relevant events, newest first, capped so
+// localStorage doesn't grow without bound.
+
+export function getActivity(): ActivityEntry[] {
+  return read<ActivityEntry[]>(KEYS.activity, []);
+}
+
+export function logActivity(message: string): void {
+  const entries = getActivity();
+  entries.unshift({ id: uid(), message, at: new Date().toISOString() });
+  write(KEYS.activity, entries.slice(0, ACTIVITY_LIMIT));
+}
+
 // ---------- jobs ----------
 
 export function getJobs(): Job[] {
@@ -130,6 +155,7 @@ export function addJob(data: NewJobInput): Job {
   };
   jobs.unshift(job);
   write(KEYS.jobs, jobs);
+  logActivity(`New job request: ${job.service || 'Job'} from ${job.name || 'a neighbor'}`);
   return job;
 }
 
@@ -144,15 +170,33 @@ export function updateJob(id: string, patch: Partial<Job>): Job[] {
 }
 
 export function approveJob(id: string): Job[] {
-  return updateJob(id, { status: 'Approved' });
+  const jobs = updateJob(id, { status: 'Approved' });
+  const job = jobs.find((j) => j.id === id);
+  if (job) logActivity(`Approved job: ${job.service || 'Job'} for ${job.name}`);
+  return jobs;
 }
 
 export function rejectJob(id: string, note: string): Job[] {
-  return updateJob(id, { status: 'Rejected', rejectNote: note || '' });
+  const jobs = updateJob(id, { status: 'Rejected', rejectNote: note || '' });
+  const job = jobs.find((j) => j.id === id);
+  if (job) logActivity(`Rejected job: ${job.service || 'Job'} for ${job.name}`);
+  return jobs;
 }
 
-export function completeJob(id: string): Job[] {
-  return updateJob(id, { status: 'Completed', completedAt: new Date().toISOString() });
+export function completeJob(id: string, rating?: number): Job[] {
+  const patch: Partial<Job> = { status: 'Completed', completedAt: new Date().toISOString() };
+  if (rating) patch.rating = Math.min(5, Math.max(1, Math.round(rating)));
+  const jobs = updateJob(id, patch);
+  const job = jobs.find((j) => j.id === id);
+  const butler = job?.assignedButlerId ? getButlers().find((b) => b.id === job.assignedButlerId) : null;
+  if (job) {
+    logActivity(
+      `Completed job: ${job.service || 'Job'}${butler ? ` by ${butler.name}` : ''}${
+        patch.rating ? ` — rated ${patch.rating}★` : ''
+      }`,
+    );
+  }
+  return jobs;
 }
 
 export function assignJob(id: string, butlerId: string, notifyMessage?: string): Job[] {
@@ -164,6 +208,9 @@ export function assignJob(id: string, butlerId: string, notifyMessage?: string):
   if (butlerId && notifyMessage) {
     notifyButler(butlerId, notifyMessage);
   }
+  const job = jobs.find((j) => j.id === id);
+  const butler = getButlers().find((b) => b.id === butlerId);
+  if (job && butler) logActivity(`Assigned ${job.service || 'job'} to ${butler.name}`);
   return jobs;
 }
 
@@ -181,6 +228,8 @@ export function acceptJob(id: string, butlerId: string): boolean {
     assignedAt: new Date().toISOString(),
     acceptedBySelf: true,
   });
+  const butler = getButlers().find((b) => b.id === butlerId);
+  if (butler) logActivity(`${butler.name} accepted ${job.service || 'a job'}`);
   return true;
 }
 
@@ -224,6 +273,7 @@ export function addButler(data: NewButlerInput): Butler {
   };
   butlers.unshift(butler);
   write(KEYS.butlers, butlers);
+  logActivity(`${butler.name} signed up as a Butler`);
   return butler;
 }
 
@@ -237,11 +287,54 @@ export function notifyButler(id: string, message: string): void {
   }
 }
 
+// Admin-only view of how active/well-rated a Butler is. Never surfaced to
+// the Butler themselves — only used from the admin dashboard.
+export function getButlerStats(butlerId: string): ButlerStats {
+  const jobs = getJobs().filter((j) => j.assignedButlerId === butlerId);
+  const completed = jobs.filter((j) => j.status === 'Completed');
+  const rated = completed.filter((j) => typeof j.rating === 'number');
+  const avgRating = rated.length
+    ? rated.reduce((sum, j) => sum + (j.rating ?? 0), 0) / rated.length
+    : null;
+  return {
+    jobsAssigned: jobs.length,
+    jobsCompleted: completed.length,
+    avgRating,
+    ratedJobs: rated.length,
+  };
+}
+
+// ---------- admins ----------
+// Dynamic allowlist so the team can add new admins from the dashboard
+// instead of editing source. Seeded once with the real owner account.
+
+function seedAdmins(): Admin[] {
+  const seeded: Admin[] = [
+    { id: uid(), email: 'pbgalley@icloud.com', password: 'Butler-PBG-1!', addedAt: new Date().toISOString() },
+  ];
+  write(KEYS.admins, seeded);
+  return seeded;
+}
+
+export function getAdmins(): Admin[] {
+  const admins = read<Admin[] | null>(KEYS.admins, null);
+  return admins && admins.length ? admins : seedAdmins();
+}
+
+export function addAdmin(email: string, password: string): Admin {
+  const admins = getAdmins();
+  const admin: Admin = { id: uid(), email: email.trim(), password, addedAt: new Date().toISOString() };
+  admins.push(admin);
+  write(KEYS.admins, admins);
+  logActivity(`Added admin: ${admin.email}`);
+  return admin;
+}
+
 // ---------- admin session ----------
 
 export function adminLogin(email: string, password: string): boolean {
   const normalized = (email || '').trim().toLowerCase();
-  const match = ADMIN_ALLOWLIST.find(
+  const match = getAdmins().find(
     (a) => a.email.toLowerCase() === normalized && a.password === password,
   );
   if (!match) return false;

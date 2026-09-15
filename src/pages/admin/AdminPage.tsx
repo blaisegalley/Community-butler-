@@ -1,14 +1,19 @@
 import { FormEvent, useState } from 'react';
 import { LogoMark } from '@/components/Logo';
 import {
+  addAdmin,
+  Admin,
   adminLogin,
   adminLogout,
   approveJob,
   assignJob,
   Butler,
   completeJob,
+  getActivity,
   getAdminSession,
+  getAdmins,
   getButlers,
+  getButlerStats,
   getJobs,
   Job,
   JobStatus,
@@ -103,18 +108,34 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
+type Tab = 'jobs' | 'butlers' | 'activity' | 'admins';
+
 function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => void }) {
   const [, forceRender] = useState(0);
+  const [tab, setTab] = useState<Tab>('jobs');
   const refresh = () => forceRender((n) => n + 1);
 
   const jobs = getJobs()
     .slice()
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || +new Date(b.submittedAt) - +new Date(a.submittedAt));
   const butlers = getButlers();
+  const activity = getActivity();
+  const admins = getAdmins();
 
   const jobsThisWeek = jobs.filter((j) => sameWeek(j.submittedAt)).length;
   const pending = jobs.filter((j) => j.status === 'New').length;
   const completedThisMonth = jobs.filter((j) => j.status === 'Completed' && sameMonth(j.completedAt)).length;
+
+  const butlersByActivity = butlers
+    .map((b) => ({ butler: b, stats: getButlerStats(b.id) }))
+    .sort((a, b) => b.stats.jobsCompleted - a.stats.jobsCompleted || b.stats.jobsAssigned - a.stats.jobsAssigned);
+
+  const TABS: { id: Tab; label: string; count: number }[] = [
+    { id: 'jobs', label: 'Job requests', count: jobs.length },
+    { id: 'butlers', label: 'Butler roster', count: butlers.length },
+    { id: 'activity', label: 'Activity', count: activity.length },
+    { id: 'admins', label: 'Admins', count: admins.length },
+  ];
 
   return (
     <div className="min-h-screen bg-[#F1EDE6]">
@@ -139,39 +160,128 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
           <StatTile value={completedThisMonth} label="Completed this month" />
         </div>
 
-        <section className="mb-9">
-          <div className="flex items-baseline justify-between mb-3.5">
-            <h2 className="text-[17px] font-bold text-[#17161B]">Job requests</h2>
-            <span className="text-[12.5px] text-black/45">{jobs.length} {jobs.length === 1 ? 'request' : 'requests'}</span>
-          </div>
-          {jobs.length ? (
-            <div className="flex flex-col gap-2.5">
-              {jobs.map((job) => (
-                <JobCard key={job.id} job={job} butlers={butlers} onChange={refresh} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState text="No job requests yet — submissions from /request will appear here." />
-          )}
-        </section>
+        <div className="flex gap-1.5 mb-6 flex-wrap">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`h-[36px] px-4 rounded-[9px] text-[13px] font-medium transition-colors ${
+                tab === t.id ? 'bg-[#0B0B0C] text-white' : 'bg-white border border-black/10 text-[#17161B] hover:bg-black/5'
+              }`}
+            >
+              {t.label} <span className={tab === t.id ? 'text-white/60' : 'text-black/40'}>({t.count})</span>
+            </button>
+          ))}
+        </div>
 
-        <section>
-          <div className="flex items-baseline justify-between mb-3.5">
-            <h2 className="text-[17px] font-bold text-[#17161B]">Butler roster</h2>
-            <span className="text-[12.5px] text-black/45">{butlers.length} {butlers.length === 1 ? 'Butler' : 'Butlers'}</span>
-          </div>
-          {butlers.length ? (
-            <div className="flex flex-col gap-2.5">
-              {butlers.map((b) => (
-                <ButlerCard key={b.id} butler={b} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState text="No Butlers signed up yet — sign-ups from /auth will appear here." />
-          )}
-        </section>
+        {tab === 'jobs' && (
+          <section>
+            {jobs.length ? (
+              <div className="flex flex-col gap-2.5">
+                {jobs.map((job) => (
+                  <JobCard key={job.id} job={job} butlers={butlers} onChange={refresh} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState text="No job requests yet — submissions from /request will appear here." />
+            )}
+          </section>
+        )}
+
+        {tab === 'butlers' && (
+          <section>
+            <p className="text-[12.5px] text-black/45 mb-3.5">Sorted by most jobs completed, so you can see who's carrying the load.</p>
+            {butlersByActivity.length ? (
+              <div className="flex flex-col gap-2.5">
+                {butlersByActivity.map(({ butler, stats }) => (
+                  <ButlerCard key={butler.id} butler={butler} stats={stats} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState text="No Butlers signed up yet — sign-ups from /auth will appear here." />
+            )}
+          </section>
+        )}
+
+        {tab === 'activity' && (
+          <section>
+            {activity.length ? (
+              <div className="flex flex-col gap-1.5">
+                {activity.map((entry) => (
+                  <div key={entry.id} className="bg-white border border-black/10 rounded-[10px] px-3.5 py-2.5 flex items-baseline justify-between gap-3 text-[13px]">
+                    <span className="text-[#17161B]">{entry.message}</span>
+                    <span className="text-black/40 text-[12px] whitespace-nowrap">{fmtRelative(entry.at)}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState text="No activity yet — actions across the site will show up here." />
+            )}
+          </section>
+        )}
+
+        {tab === 'admins' && <AdminsSection admins={admins} onChange={refresh} />}
       </div>
     </div>
+  );
+}
+
+function AdminsSection({ admins, onChange }: { admins: Admin[]; onChange: () => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  function handleAdd(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const normalized = email.trim().toLowerCase();
+    if (!normalized || !password) return;
+    if (admins.some((a) => a.email.toLowerCase() === normalized)) {
+      setError('That email is already an admin.');
+      return;
+    }
+    addAdmin(email.trim(), password);
+    setEmail('');
+    setPassword('');
+    setError('');
+    onChange();
+  }
+
+  return (
+    <section className="flex flex-col gap-6">
+      <div className="bg-white border border-black/10 rounded-[14px] p-5">
+        <h3 className="text-[14.5px] font-bold text-[#17161B] mb-3.5">Add an admin</h3>
+        {error && (
+          <div className="rounded-[8px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[12.5px] px-3.5 py-2.5 mb-3.5">
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleAdd} noValidate className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+          <div className="flex-1 w-full">
+            <label className={labelClass} htmlFor="new-admin-email">Email</label>
+            <input id="new-admin-email" type="email" required className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div className="flex-1 w-full">
+            <label className={labelClass} htmlFor="new-admin-password">Password</label>
+            <input id="new-admin-password" type="password" required className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          <button type="submit" className="h-[42px] px-5 rounded-[10px] bg-[#0B0B0C] text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap">
+            Add admin
+          </button>
+        </form>
+      </div>
+
+      <div>
+        <h3 className="text-[14.5px] font-bold text-[#17161B] mb-3.5">Current admins</h3>
+        <div className="flex flex-col gap-2.5">
+          {admins.map((a) => (
+            <div key={a.id} className="bg-white border border-black/10 rounded-[12px] px-4 py-3 flex items-center justify-between gap-3">
+              <span className="text-[13.5px] font-medium text-[#17161B]">{a.email}</span>
+              <span className="text-[12px] text-black/40 whitespace-nowrap">added {fmtDate(a.addedAt)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -215,8 +325,8 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
     assignJob(job.id, selectedButler, `You've been assigned a new job: ${job.service}. Check the admin for details.`);
     onChange();
   }
-  function handleComplete() {
-    completeJob(job.id);
+  function handleComplete(rating: number) {
+    completeJob(job.id, rating);
     onChange();
   }
 
@@ -245,6 +355,9 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
         <div className="text-[12.5px] text-[#55545C] mt-2">
           Assigned to <strong className="text-[#17161B]">{assignedButler?.name ?? 'Unknown Butler'}</strong>
           {job.completedAt ? ` — completed ${fmtDate(job.completedAt)}` : ''}
+          {job.status === 'Completed' && job.rating && (
+            <span className="ml-1.5 text-[#17161B] font-medium">· {job.rating}★</span>
+          )}
         </div>
       )}
       {job.status === 'Rejected' && job.rejectNote && (
@@ -273,16 +386,35 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
       )}
       {job.status === 'Assigned' && (
         <div className="mt-3">
-          <button onClick={handleComplete} className="h-[32px] px-3.5 rounded-[8px] bg-[#0B0B0C] text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity">
-            Mark completed
-          </button>
+          <div className="text-[11.5px] text-black/45 mb-1.5">Mark completed and rate the Butler's work</div>
+          <div className="flex gap-1.5">
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                onClick={() => handleComplete(n)}
+                title={`Complete and rate ${n} star${n > 1 ? 's' : ''}`}
+                className="h-[32px] px-2.5 rounded-[8px] border border-black/15 text-[12.5px] font-medium text-[#17161B] hover:bg-black/5 transition-colors"
+              >
+                {n}★
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
   );
 }
 
-function ButlerCard({ butler }: { butler: Butler }) {
+function StarRow({ rating }: { rating: number | null }) {
+  if (rating == null) return <span className="text-black/35">No ratings yet</span>;
+  return (
+    <span className="text-[#17161B] font-medium">
+      {rating.toFixed(1)}★
+    </span>
+  );
+}
+
+function ButlerCard({ butler, stats }: { butler: Butler; stats: ReturnType<typeof getButlerStats> }) {
   const unread = (butler.notifications || []).length;
   return (
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4 flex items-start justify-between gap-3 flex-wrap">
@@ -298,6 +430,11 @@ function ButlerCard({ butler }: { butler: Butler }) {
             ))}
           </div>
         )}
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-[12.5px]">
+          <span className="text-black/45">{stats.jobsCompleted} completed</span>
+          <span className="text-black/45">{stats.jobsAssigned} assigned</span>
+          <StarRow rating={stats.avgRating} />
+        </div>
       </div>
       {unread > 0 && (
         <span className="text-[11px] font-bold bg-[#0B0B0C] text-white rounded-full px-[9px] py-[3px] whitespace-nowrap">{unread} new</span>
