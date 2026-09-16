@@ -310,7 +310,7 @@ export function getButlerStats(butlerId: string): ButlerStats {
 
 function seedAdmins(): Admin[] {
   const seeded: Admin[] = [
-    { id: uid(), email: 'pbgalley@icloud.com', password: 'Butler-PBG-1!', addedAt: new Date().toISOString() },
+    { id: uid(), email: 'pbgalley@icloud.com', password: '44Brinker', addedAt: new Date().toISOString() },
   ];
   write(KEYS.admins, seeded);
   return seeded;
@@ -328,6 +328,17 @@ export function addAdmin(email: string, password: string): Admin {
   write(KEYS.admins, admins);
   logActivity(`Added admin: ${admin.email}`);
   return admin;
+}
+
+export function changeAdminPassword(email: string, currentPassword: string, newPassword: string): boolean {
+  const admins = getAdmins();
+  const normalized = email.trim().toLowerCase();
+  const admin = admins.find((a) => a.email.toLowerCase() === normalized);
+  if (!admin || admin.password !== currentPassword) return false;
+  admin.password = newPassword;
+  write(KEYS.admins, admins);
+  logActivity(`Updated password: ${admin.email}`);
+  return true;
 }
 
 // ---------- admin session ----------

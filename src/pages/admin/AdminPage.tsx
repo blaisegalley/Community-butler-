@@ -8,6 +8,7 @@ import {
   approveJob,
   assignJob,
   Butler,
+  changeAdminPassword,
   completeJob,
   getActivity,
   getAdminSession,
@@ -220,13 +221,13 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
           </section>
         )}
 
-        {tab === 'admins' && <AdminsSection admins={admins} onChange={refresh} />}
+        {tab === 'admins' && <AdminsSection admins={admins} email={email} onChange={refresh} />}
       </div>
     </div>
   );
 }
 
-function AdminsSection({ admins, onChange }: { admins: Admin[]; onChange: () => void }) {
+function AdminsSection({ admins, email: myEmail, onChange }: { admins: Admin[]; email: string; onChange: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -248,6 +249,8 @@ function AdminsSection({ admins, onChange }: { admins: Admin[]; onChange: () => 
 
   return (
     <section className="flex flex-col gap-6">
+      <ChangePasswordCard email={myEmail} />
+
       <div className="bg-white border border-black/10 rounded-[14px] p-5">
         <h3 className="text-[14.5px] font-bold text-[#17161B] mb-3.5">Add an admin</h3>
         {error && (
@@ -282,6 +285,53 @@ function AdminsSection({ admins, onChange }: { admins: Admin[]; onChange: () => 
         </div>
       </div>
     </section>
+  );
+}
+
+function ChangePasswordCard({ email }: { email: string }) {
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [status, setStatus] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (changeAdminPassword(email, current, next)) {
+      setStatus({ kind: 'success', text: 'Password updated.' });
+      setCurrent('');
+      setNext('');
+    } else {
+      setStatus({ kind: 'error', text: 'Current password is incorrect.' });
+    }
+  }
+
+  return (
+    <div className="bg-white border border-black/10 rounded-[14px] p-5">
+      <h3 className="text-[14.5px] font-bold text-[#17161B] mb-3.5">Change your password</h3>
+      {status && (
+        <div
+          className={`rounded-[8px] border text-[12.5px] px-3.5 py-2.5 mb-3.5 ${
+            status.kind === 'success'
+              ? 'border-[#2c7a41]/30 bg-[#2c7a41]/10 text-[#215c31]'
+              : 'border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c]'
+          }`}
+        >
+          {status.text}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+        <div className="flex-1 w-full">
+          <label className={labelClass} htmlFor="current-password">Current password</label>
+          <input id="current-password" type="password" required className={inputClass} value={current} onChange={(e) => setCurrent(e.target.value)} />
+        </div>
+        <div className="flex-1 w-full">
+          <label className={labelClass} htmlFor="new-password">New password</label>
+          <input id="new-password" type="password" required minLength={6} className={inputClass} value={next} onChange={(e) => setNext(e.target.value)} />
+        </div>
+        <button type="submit" className="h-[42px] px-5 rounded-[10px] bg-[#0B0B0C] text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap">
+          Update password
+        </button>
+      </form>
+    </div>
   );
 }
 
