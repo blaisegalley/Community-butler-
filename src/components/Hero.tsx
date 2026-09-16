@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import FadeIn from '@/components/FadeIn';
 import { withBase } from '@/lib/url';
@@ -13,87 +13,40 @@ const HERO_VIDEOS = [
   'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_153138_b125f92c-1be7-4a81-8cb8-57ccf1c62495.mp4', // mowing the lawn
   'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_181548_5fa38635-59ee-467a-a3c4-2d44a97a88ae.mp4', // weeding
 ];
-const FADE_MS = 800;
-const LEAD_S = 0.35; // start the crossfade this many seconds before a clip's natural end
-
-// Two persistent <video> elements crossfade into each other instead of being
-// remounted, so the next clip is already preloaded and playing by the time
-// its fade-in starts — no black flash, no re-fetch stutter. z-index/opacity
-// are set via inline style rather than Tailwind arbitrary-value classes,
-// since those can get dropped by the production CSS build.
-function HeroVideoBackground() {
-  const videoARef = useRef<HTMLVideoElement>(null);
-  const videoBRef = useRef<HTMLVideoElement>(null);
-  const [aIsFront, setAIsFront] = useState(true);
+// A single <video> per clip, remounted via `key` on each switch, with
+// autoPlay/src/muted/playsInline set declaratively — the plain, reliable
+// React video-autoplay pattern. A short opacity fade-in on mount (inline
+// style, not a Tailwind arbitrary class) softens the cut between clips
+// without needing two video elements playing at once.
+function HeroVideo({ src, onEnded }: { src: string; onEnded: () => void }) {
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const a = videoARef.current;
-    const b = videoBRef.current;
-    if (!a || !b) return;
-
-    let front = a;
-    let back = b;
-    let frontIndex = 0;
-    let transitioning = false;
-
-    function crossfade() {
-      if (transitioning) return;
-      transitioning = true;
-      back.currentTime = 0;
-      back.play().catch(() => {});
-      setAIsFront(back === a);
-      frontIndex = (frontIndex + 1) % HERO_VIDEOS.length;
-      window.setTimeout(() => {
-        front.pause();
-        const tmp = front;
-        front = back;
-        back = tmp;
-        const nextIndex = (frontIndex + 1) % HERO_VIDEOS.length;
-        back.src = HERO_VIDEOS[nextIndex];
-        back.load();
-        transitioning = false;
-      }, FADE_MS);
-    }
-
-    function onTimeUpdate(video: HTMLVideoElement) {
-      if (transitioning || video !== front || !video.duration) return;
-      if (video.currentTime >= video.duration - LEAD_S) crossfade();
-    }
-
-    const onATime = () => onTimeUpdate(a);
-    const onBTime = () => onTimeUpdate(b);
-    a.addEventListener('timeupdate', onATime);
-    b.addEventListener('timeupdate', onBTime);
-
-    front.src = HERO_VIDEOS[0];
-    front.currentTime = 0;
-    front.play().catch(() => {});
-    back.src = HERO_VIDEOS[1];
-    back.load();
-
-    return () => {
-      a.removeEventListener('timeupdate', onATime);
-      b.removeEventListener('timeupdate', onBTime);
-    };
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
   return (
-    <>
-      <video
-        ref={videoARef}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ opacity: aIsFront ? 1 : 0, zIndex: aIsFront ? 1 : 0, transition: `opacity ${FADE_MS}ms ease` }}
-        muted
-        playsInline
-      />
-      <video
-        ref={videoBRef}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{ opacity: aIsFront ? 0 : 1, zIndex: aIsFront ? 0 : 1, transition: `opacity ${FADE_MS}ms ease` }}
-        muted
-        playsInline
-      />
-    </>
+    <video
+      className="absolute inset-0 w-full h-full object-cover"
+      style={{ opacity: visible ? 1 : 0, transition: 'opacity 700ms ease' }}
+      src={src}
+      autoPlay
+      muted
+      playsInline
+      onEnded={onEnded}
+    />
+  );
+}
+
+function HeroVideoBackground() {
+  const [videoIndex, setVideoIndex] = useState(0);
+  return (
+    <HeroVideo
+      key={videoIndex}
+      src={HERO_VIDEOS[videoIndex]}
+      onEnded={() => setVideoIndex((i) => (i + 1) % HERO_VIDEOS.length)}
+    />
   );
 }
 
