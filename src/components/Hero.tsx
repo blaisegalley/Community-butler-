@@ -1,6 +1,14 @@
+import { useState } from 'react';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import FadeIn from '@/components/FadeIn';
 import { withBase } from '@/lib/url';
+
+// Alternates hero background between these clips: lawn mowing plays first,
+// then hands off to snow shoveling on end, looping back and forth.
+const HERO_VIDEOS = [
+  'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_153138_b125f92c-1be7-4a81-8cb8-57ccf1c62495.mp4',
+  'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_154221_25a6b3a3-7c6d-45a7-bae6-c039f596092c.mp4',
+];
 
 const NAV_LINKS = [
   { label: 'For Neighbors', href: withBase('request/') },
@@ -30,12 +38,18 @@ function BowtieMark({ className = '' }: { className?: string }) {
 }
 
 export default function Hero() {
+  const [videoIndex, setVideoIndex] = useState(0);
+
   return (
     <section className="relative w-full h-screen overflow-hidden bg-ink flex flex-col">
-      <img
+      <video
+        key={videoIndex}
         className="absolute inset-0 w-full h-full object-cover"
-        src="https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260915_182328_87e5d876-76d7-4620-a036-6bbc07c7f14c.png"
-        alt=""
+        src={HERO_VIDEOS[videoIndex]}
+        autoPlay
+        muted
+        playsInline
+        onEnded={() => setVideoIndex((i) => (i + 1) % HERO_VIDEOS.length)}
       />
 
       <div className="relative z-10 flex flex-col h-full">
