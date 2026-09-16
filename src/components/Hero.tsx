@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import FadeIn from '@/components/FadeIn';
 import { withBase } from '@/lib/url';
@@ -18,24 +18,60 @@ const HERO_VIDEOS = [
 // React video-autoplay pattern. A short opacity fade-in on mount (inline
 // style, not a Tailwind arbitrary class) softens the cut between clips
 // without needing two video elements playing at once.
+//
+// Some browsers silently block autoplay even when muted, in which case
+// the video just sits on its first frame with nothing to interact with.
+// If that happens (the play() promise rejects), show an explicit tap-to-play
+// button — a real user gesture is always allowed to start playback.
 function HeroVideo({ src, onEnded }: { src: string; onEnded: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [visible, setVisible] = useState(false);
+  const [needsTap, setNeedsTap] = useState(false);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
+    const video = videoRef.current;
+    const playResult = video?.play();
+    if (playResult) {
+      playResult.catch(() => setNeedsTap(true));
+    }
     return () => cancelAnimationFrame(id);
   }, []);
 
+  function handleTap() {
+    videoRef.current
+      ?.play()
+      .then(() => setNeedsTap(false))
+      .catch(() => {});
+  }
+
   return (
-    <video
-      className="absolute inset-0 w-full h-full object-cover"
-      style={{ opacity: visible ? 1 : 0, transition: 'opacity 700ms ease' }}
-      src={src}
-      autoPlay
-      muted
-      playsInline
-      onEnded={onEnded}
-    />
+    <>
+      <video
+        ref={videoRef}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: visible ? 1 : 0, transition: 'opacity 700ms ease' }}
+        src={src}
+        autoPlay
+        muted
+        playsInline
+        onEnded={onEnded}
+      />
+      {needsTap && (
+        <button
+          type="button"
+          onClick={handleTap}
+          aria-label="Play background video"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/25"
+        >
+          <span className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-lg">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 ml-1" fill="#0B0F0D">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </span>
+        </button>
+      )}
+    </>
   );
 }
 
