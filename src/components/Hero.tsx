@@ -84,17 +84,15 @@ function HeroVideoBackground() {
     <>
       <video
         ref={videoARef}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[800ms] ${
-          aIsFront ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
-        }`}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: aIsFront ? 1 : 0, zIndex: aIsFront ? 1 : 0, transition: `opacity ${FADE_MS}ms ease` }}
         muted
         playsInline
       />
       <video
         ref={videoBRef}
-        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[800ms] ${
-          aIsFront ? 'opacity-0 z-0' : 'opacity-100 z-[1]'
-        }`}
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ opacity: aIsFront ? 0 : 1, zIndex: aIsFront ? 0 : 1, transition: `opacity ${FADE_MS}ms ease` }}
         muted
         playsInline
       />
