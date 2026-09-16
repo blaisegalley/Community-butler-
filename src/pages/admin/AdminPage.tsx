@@ -47,13 +47,13 @@ function AdminLogin({ onSignedIn }: { onSignedIn: () => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F1EDE6] flex items-center justify-center px-5 py-10">
+    <div className="min-h-screen bg-sand flex items-center justify-center px-5 py-10">
       <div className="w-full max-w-[380px] bg-white border border-black/10 rounded-[18px] shadow-[0_20px_50px_-20px_rgba(0,0,0,0.25)] p-7 sm:p-8 text-center">
-        <div className="flex justify-center text-[#17161B] mb-3">
+        <div className="flex justify-center text-ink mb-3">
           <LogoMark />
         </div>
-        <h1 className="text-[#17161B] text-[20px] font-semibold">Admin sign in</h1>
-        <p className="text-[#55545C] text-[13.5px] mt-1 mb-6">Restricted to the Community Butler team.</p>
+        <h1 className="text-ink text-[20px] font-semibold">Admin sign in</h1>
+        <p className="text-graphite text-[13.5px] mt-1 mb-6">Restricted to the Community Butler team.</p>
 
         {error && (
           <div className="rounded-[10px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[13px] px-4 py-3 mb-4 text-left">
@@ -80,9 +80,9 @@ function AdminLogin({ onSignedIn }: { onSignedIn: () => void }) {
 const STATUS_ORDER: Record<JobStatus, number> = { New: 0, Approved: 1, Assigned: 2, Completed: 3, Rejected: 4 };
 
 const STATUS_STYLES: Record<JobStatus, string> = {
-  New: 'bg-[#71757C]/15 text-[#44474C]',
-  Approved: 'bg-[#0B0B0C]/8 text-[#17161B]',
-  Assigned: 'bg-[#0B0B0C]/10 text-[#0B0B0C]',
+  New: 'bg-graphite/15 text-[#44474C]',
+  Approved: 'bg-ink/8 text-ink',
+  Assigned: 'bg-ink/10 text-ink',
   Completed: 'bg-[#2c7a41]/15 text-[#2c7a41]',
   Rejected: 'bg-[#C4442E]/12 text-[#8c2f1c]',
 };
@@ -139,16 +139,16 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
   ];
 
   return (
-    <div className="min-h-screen bg-[#F1EDE6]">
+    <div className="min-h-screen bg-sand">
       <div className="max-w-[1080px] mx-auto px-5 py-6">
         <div className="flex items-center justify-between gap-3 flex-wrap pb-5 mb-6 border-b border-black/10">
-          <a href={withBase('')} className="flex items-center gap-2.5 text-[#17161B] font-semibold text-[15px]">
+          <a href={withBase('')} className="flex items-center gap-2.5 text-ink font-semibold text-[15px]">
             <LogoMark />
             Community Butler <span className="text-black/40 font-normal">Admin</span>
           </a>
           <div className="flex items-center gap-3 text-[13px] text-black/50">
-            <span>Signed in as <strong className="text-[#17161B]">{email}</strong></span>
-            <button onClick={onLogout} className="h-[34px] px-3.5 rounded-[8px] border border-black/15 text-[#17161B] text-[12.5px] font-medium hover:bg-black/5 transition-colors">
+            <span>Signed in as <strong className="text-ink">{email}</strong></span>
+            <button onClick={onLogout} className="h-[34px] px-3.5 rounded-[8px] border border-black/15 text-ink text-[12.5px] font-medium hover:bg-black/5 transition-colors">
               Log out
             </button>
           </div>
@@ -167,7 +167,7 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`h-[36px] px-4 rounded-[9px] text-[13px] font-medium transition-colors ${
-                tab === t.id ? 'bg-[#0B0B0C] text-white' : 'bg-white border border-black/10 text-[#17161B] hover:bg-black/5'
+                tab === t.id ? 'bg-ink text-white' : 'bg-white border border-black/10 text-ink hover:bg-black/5'
               }`}
             >
               {t.label} <span className={tab === t.id ? 'text-white/60' : 'text-black/40'}>({t.count})</span>
@@ -210,7 +210,7 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
               <div className="flex flex-col gap-1.5">
                 {activity.map((entry) => (
                   <div key={entry.id} className="bg-white border border-black/10 rounded-[10px] px-3.5 py-2.5 flex items-baseline justify-between gap-3 text-[13px]">
-                    <span className="text-[#17161B]">{entry.message}</span>
+                    <span className="text-ink">{entry.message}</span>
                     <span className="text-black/40 text-[12px] whitespace-nowrap">{fmtRelative(entry.at)}</span>
                   </div>
                 ))}
@@ -252,7 +252,7 @@ function AdminsSection({ admins, email: myEmail, onChange }: { admins: Admin[]; 
       <ChangePasswordCard email={myEmail} />
 
       <div className="bg-white border border-black/10 rounded-[14px] p-5">
-        <h3 className="text-[14.5px] font-bold text-[#17161B] mb-3.5">Add an admin</h3>
+        <h3 className="text-[14.5px] font-bold text-ink mb-3.5">Add an admin</h3>
         {error && (
           <div className="rounded-[8px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[12.5px] px-3.5 py-2.5 mb-3.5">
             {error}
@@ -267,18 +267,18 @@ function AdminsSection({ admins, email: myEmail, onChange }: { admins: Admin[]; 
             <label className={labelClass} htmlFor="new-admin-password">Password</label>
             <input id="new-admin-password" type="password" required className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <button type="submit" className="h-[42px] px-5 rounded-[10px] bg-[#0B0B0C] text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap">
+          <button type="submit" className="h-[42px] px-5 rounded-[10px] bg-ink text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap">
             Add admin
           </button>
         </form>
       </div>
 
       <div>
-        <h3 className="text-[14.5px] font-bold text-[#17161B] mb-3.5">Current admins</h3>
+        <h3 className="text-[14.5px] font-bold text-ink mb-3.5">Current admins</h3>
         <div className="flex flex-col gap-2.5">
           {admins.map((a) => (
             <div key={a.id} className="bg-white border border-black/10 rounded-[12px] px-4 py-3 flex items-center justify-between gap-3">
-              <span className="text-[13.5px] font-medium text-[#17161B]">{a.email}</span>
+              <span className="text-[13.5px] font-medium text-ink">{a.email}</span>
               <span className="text-[12px] text-black/40 whitespace-nowrap">added {fmtDate(a.addedAt)}</span>
             </div>
           ))}
@@ -306,7 +306,7 @@ function ChangePasswordCard({ email }: { email: string }) {
 
   return (
     <div className="bg-white border border-black/10 rounded-[14px] p-5">
-      <h3 className="text-[14.5px] font-bold text-[#17161B] mb-3.5">Change your password</h3>
+      <h3 className="text-[14.5px] font-bold text-ink mb-3.5">Change your password</h3>
       {status && (
         <div
           className={`rounded-[8px] border text-[12.5px] px-3.5 py-2.5 mb-3.5 ${
@@ -327,7 +327,7 @@ function ChangePasswordCard({ email }: { email: string }) {
           <label className={labelClass} htmlFor="new-password">New password</label>
           <input id="new-password" type="password" required minLength={6} className={inputClass} value={next} onChange={(e) => setNext(e.target.value)} />
         </div>
-        <button type="submit" className="h-[42px] px-5 rounded-[10px] bg-[#0B0B0C] text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap">
+        <button type="submit" className="h-[42px] px-5 rounded-[10px] bg-ink text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap">
           Update password
         </button>
       </form>
@@ -338,7 +338,7 @@ function ChangePasswordCard({ email }: { email: string }) {
 function StatTile({ value, label }: { value: number; label: string }) {
   return (
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4">
-      <div className="text-[26px] font-bold text-[#17161B] tabular-nums">{value}</div>
+      <div className="text-[26px] font-bold text-ink tabular-nums">{value}</div>
       <div className="text-[12px] text-black/45 mt-1">{label}</div>
     </div>
   );
@@ -384,7 +384,7 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <div className="text-[14.5px] font-bold text-[#17161B]">{job.service || 'Job request'} — {job.name}</div>
+          <div className="text-[14.5px] font-bold text-ink">{job.service || 'Job request'} — {job.name}</div>
           <div className="text-[12.5px] text-black/45 mt-0.5">{job.address} · submitted {fmtRelative(job.submittedAt)}</div>
         </div>
         <span className={`text-[11px] font-bold uppercase tracking-wide rounded-full px-[10px] py-[3px] whitespace-nowrap ${STATUS_STYLES[job.status]}`}>
@@ -392,21 +392,21 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
         </span>
       </div>
 
-      {job.details && <div className="text-[13px] text-[#55545C] mt-2">{job.details}</div>}
+      {job.details && <div className="text-[13px] text-graphite mt-2">{job.details}</div>}
 
       <dl className="grid gap-x-4 gap-y-1 mt-2.5 text-[12.5px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))' }}>
-        <div><dt className="text-black/40">Phone</dt><dd className="text-[#17161B] font-medium">{job.phone || '—'}</dd></div>
-        <div><dt className="text-black/40">Email</dt><dd className="text-[#17161B] font-medium">{job.email || '—'}</dd></div>
-        <div><dt className="text-black/40">Preferred date</dt><dd className="text-[#17161B] font-medium">{job.date || 'Flexible'}</dd></div>
-        <div><dt className="text-black/40">Budget</dt><dd className="text-[#17161B] font-medium">{job.budget ? `$${job.budget}` : 'Not specified'}</dd></div>
+        <div><dt className="text-black/40">Phone</dt><dd className="text-ink font-medium">{job.phone || '—'}</dd></div>
+        <div><dt className="text-black/40">Email</dt><dd className="text-ink font-medium">{job.email || '—'}</dd></div>
+        <div><dt className="text-black/40">Preferred date</dt><dd className="text-ink font-medium">{job.date || 'Flexible'}</dd></div>
+        <div><dt className="text-black/40">Budget</dt><dd className="text-ink font-medium">{job.budget ? `$${job.budget}` : 'Not specified'}</dd></div>
       </dl>
 
       {(job.status === 'Assigned' || job.status === 'Completed') && (
-        <div className="text-[12.5px] text-[#55545C] mt-2">
-          Assigned to <strong className="text-[#17161B]">{assignedButler?.name ?? 'Unknown Butler'}</strong>
+        <div className="text-[12.5px] text-graphite mt-2">
+          Assigned to <strong className="text-ink">{assignedButler?.name ?? 'Unknown Butler'}</strong>
           {job.completedAt ? ` — completed ${fmtDate(job.completedAt)}` : ''}
           {job.status === 'Completed' && job.rating && (
-            <span className="ml-1.5 text-[#17161B] font-medium">· {job.rating}★</span>
+            <span className="ml-1.5 text-ink font-medium">· {job.rating}★</span>
           )}
         </div>
       )}
@@ -416,8 +416,8 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
 
       {job.status === 'New' && (
         <div className="flex gap-2 mt-3">
-          <button onClick={handleApprove} className="h-[32px] px-3.5 rounded-[8px] bg-[#0B0B0C] text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity">Approve</button>
-          <button onClick={handleReject} className="h-[32px] px-3.5 rounded-[8px] border border-black/15 text-[#17161B] text-[12.5px] font-medium hover:bg-black/5 transition-colors">Reject</button>
+          <button onClick={handleApprove} className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity">Approve</button>
+          <button onClick={handleReject} className="h-[32px] px-3.5 rounded-[8px] border border-black/15 text-ink text-[12.5px] font-medium hover:bg-black/5 transition-colors">Reject</button>
         </div>
       )}
       {job.status === 'Approved' && (
@@ -425,11 +425,11 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
           <select
             value={selectedButler}
             onChange={(e) => setSelectedButler(e.target.value)}
-            className="h-[32px] rounded-[8px] border border-black/15 text-[12.5px] px-2 bg-white text-[#17161B]"
+            className="h-[32px] rounded-[8px] border border-black/15 text-[12.5px] px-2 bg-white text-ink"
           >
             {butlers.length ? butlers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>) : <option value="">No Butlers signed up yet</option>}
           </select>
-          <button onClick={handleAssign} disabled={!butlers.length} className="h-[32px] px-3.5 rounded-[8px] bg-[#0B0B0C] text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40">
+          <button onClick={handleAssign} disabled={!butlers.length} className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40">
             Assign
           </button>
         </div>
@@ -443,7 +443,7 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
                 key={n}
                 onClick={() => handleComplete(n)}
                 title={`Complete and rate ${n} star${n > 1 ? 's' : ''}`}
-                className="h-[32px] px-2.5 rounded-[8px] border border-black/15 text-[12.5px] font-medium text-[#17161B] hover:bg-black/5 transition-colors"
+                className="h-[32px] px-2.5 rounded-[8px] border border-black/15 text-[12.5px] font-medium text-ink hover:bg-black/5 transition-colors"
               >
                 {n}★
               </button>
@@ -458,7 +458,7 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
 function StarRow({ rating }: { rating: number | null }) {
   if (rating == null) return <span className="text-black/35">No ratings yet</span>;
   return (
-    <span className="text-[#17161B] font-medium">
+    <span className="text-ink font-medium">
       {rating.toFixed(1)}★
     </span>
   );
@@ -469,14 +469,14 @@ function ButlerCard({ butler, stats }: { butler: Butler; stats: ReturnType<typeo
   return (
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4 flex items-start justify-between gap-3 flex-wrap">
       <div>
-        <div className="text-[14.5px] font-bold text-[#17161B]">{butler.name}</div>
+        <div className="text-[14.5px] font-bold text-ink">{butler.name}</div>
         <div className="text-[12.5px] text-black/45 mt-0.5">
           {butler.contact} · {butler.serviceArea || 'No area set'} · signed up {fmtDate(butler.signedUpAt)}
         </div>
         {!!butler.jobTypePrefs.length && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {butler.jobTypePrefs.map((p) => (
-              <span key={p} className="text-[11.5px] bg-[#F1EDE6] border border-black/10 rounded-full px-[9px] py-[3px] text-[#44474C]">{p}</span>
+              <span key={p} className="text-[11.5px] bg-sand border border-black/10 rounded-full px-[9px] py-[3px] text-[#44474C]">{p}</span>
             ))}
           </div>
         )}
@@ -487,7 +487,7 @@ function ButlerCard({ butler, stats }: { butler: Butler; stats: ReturnType<typeo
         </div>
       </div>
       {unread > 0 && (
-        <span className="text-[11px] font-bold bg-[#0B0B0C] text-white rounded-full px-[9px] py-[3px] whitespace-nowrap">{unread} new</span>
+        <span className="text-[11px] font-bold bg-ink text-white rounded-full px-[9px] py-[3px] whitespace-nowrap">{unread} new</span>
       )}
     </div>
   );

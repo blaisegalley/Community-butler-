@@ -73,7 +73,7 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBF5EC] flex flex-col">
+    <div className="min-h-screen bg-sand flex flex-col">
       <SiteHeader />
       <main className="flex-1 w-full max-w-[560px] mx-auto px-5 sm:px-8 py-10 sm:py-14">
         <Animate delay={0} direction="up">
@@ -81,22 +81,22 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
             <button
               type="button"
               onClick={() => setMode('signup')}
-              className={`h-[38px] px-5 rounded-[8px] text-[13.5px] font-semibold transition-colors ${mode === 'signup' ? 'bg-[#0B0B0C] text-white' : 'text-black/50'}`}
+              className={`h-[38px] px-5 rounded-[8px] text-[13.5px] font-semibold transition-colors ${mode === 'signup' ? 'bg-ink text-white' : 'text-black/50'}`}
             >
               Sign up
             </button>
             <button
               type="button"
               onClick={() => setMode('signin')}
-              className={`h-[38px] px-5 rounded-[8px] text-[13.5px] font-semibold transition-colors ${mode === 'signin' ? 'bg-[#0B0B0C] text-white' : 'text-black/50'}`}
+              className={`h-[38px] px-5 rounded-[8px] text-[13.5px] font-semibold transition-colors ${mode === 'signin' ? 'bg-ink text-white' : 'text-black/50'}`}
             >
               Sign in
             </button>
           </div>
-          <h1 className="text-[#17161B] text-[28px] font-semibold mb-2">
+          <h1 className="text-ink text-[28px] font-semibold mb-2">
             {mode === 'signup' ? 'Get started' : 'Butler sign in'}
           </h1>
-          <p className="text-[#55545C] text-[15px] mb-8">
+          <p className="text-graphite text-[15px] mb-8">
             {mode === 'signup'
               ? 'Create your Butler account to start seeing jobs near you.'
               : 'Welcome back — sign in to see your jobs and schedule.'}
@@ -129,7 +129,7 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
                   <label className={labelClass}>Job types you&rsquo;re interested in</label>
                   <div className="flex flex-wrap gap-x-4 gap-y-2 pt-0.5">
                     {JOB_TYPE_OPTIONS.map((opt) => (
-                      <label key={opt} className="flex items-center gap-1.5 text-[13.5px] text-[#55545C]">
+                      <label key={opt} className="flex items-center gap-1.5 text-[13.5px] text-graphite">
                         <input type="checkbox" checked={prefs.includes(opt)} onChange={() => togglePref(opt)} />
                         {opt}
                       </label>
@@ -179,30 +179,30 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
   }
 
   return (
-    <div className="min-h-screen bg-[#FBF5EC] flex flex-col">
+    <div className="min-h-screen bg-sand flex flex-col">
       <SiteHeader />
       <main className="flex-1 w-full max-w-[760px] mx-auto px-5 sm:px-8 py-10 sm:py-14">
         <div className="flex items-center justify-between gap-4 mb-8 flex-wrap">
           <div>
-            <h1 className="text-[#17161B] text-[24px] font-semibold">Welcome back, {butler.name.split(' ')[0]}</h1>
-            <p className="text-[#55545C] text-[13.5px] mt-1">
+            <h1 className="text-ink text-[24px] font-semibold">Welcome back, {butler.name.split(' ')[0]}</h1>
+            <p className="text-graphite text-[13.5px] mt-1">
               {butler.serviceArea ? `${butler.serviceArea} · ` : ''}Signed in as {butler.contact}
             </p>
           </div>
-          <button onClick={onLogout} className="h-[38px] px-4 rounded-[10px] border border-black/15 text-[#17161B] text-[12.5px] font-medium hover:bg-black/5 transition-colors">
+          <button onClick={onLogout} className="h-[38px] px-4 rounded-[10px] border border-black/15 text-ink text-[12.5px] font-medium hover:bg-black/5 transition-colors">
             Log out
           </button>
         </div>
 
         <section className="mb-10">
-          <h2 className="text-[15px] font-semibold text-[#17161B] mb-3">
+          <h2 className="text-[15px] font-semibold text-ink mb-3">
             Available jobs {available.length ? <span className="font-normal text-black/40">({available.length})</span> : null}
           </h2>
           {available.length ? (
             <div className="flex flex-col gap-2.5">
               {available.map((job) => (
                 <JobTile key={job.id} job={job} matched={butler.jobTypePrefs.includes(job.service)} action={
-                  <button onClick={() => handleAccept(job.id)} className="h-[34px] px-4 rounded-[8px] bg-[#0B0B0C] text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity mt-3">
+                  <button onClick={() => handleAccept(job.id)} className="h-[34px] px-4 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity mt-3">
                     Accept job
                   </button>
                 } />
@@ -214,7 +214,7 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
         </section>
 
         <section>
-          <h2 className="text-[15px] font-semibold text-[#17161B] mb-3">My jobs</h2>
+          <h2 className="text-[15px] font-semibold text-ink mb-3">My jobs</h2>
           {mine.length ? (
             <div className="flex flex-col gap-2.5">
               {mine.map((job) => (
@@ -232,8 +232,8 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  Approved: 'bg-[#71757C]/15 text-[#44474C]',
-  Assigned: 'bg-[#0B0B0C]/10 text-[#0B0B0C]',
+  Approved: 'bg-graphite/15 text-[#44474C]',
+  Assigned: 'bg-ink/10 text-ink',
   Completed: 'bg-[#2c7a41]/15 text-[#2c7a41]',
 };
 
@@ -242,7 +242,7 @@ function JobTile({ job, matched, statusPill, action }: { job: Job; matched?: boo
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <div className="text-[14.5px] font-semibold text-[#17161B]">{job.service || 'Job'}</div>
+          <div className="text-[14.5px] font-semibold text-ink">{job.service || 'Job'}</div>
           <div className="text-[12.5px] text-black/45 mt-0.5">{job.address}</div>
         </div>
         {matched && (
@@ -256,7 +256,7 @@ function JobTile({ job, matched, statusPill, action }: { job: Job; matched?: boo
           </span>
         )}
       </div>
-      {job.details && <p className="text-[13px] text-[#55545C] mt-2">{job.details}</p>}
+      {job.details && <p className="text-[13px] text-graphite mt-2">{job.details}</p>}
       {action}
     </div>
   );

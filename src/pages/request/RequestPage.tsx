@@ -32,18 +32,18 @@ export default function RequestPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FBF5EC] flex flex-col">
+    <div className="min-h-screen bg-sand flex flex-col">
       <SiteHeader />
 
       <main className="flex-1 w-full max-w-[720px] mx-auto px-5 sm:px-8 py-10 sm:py-14">
         <Animate delay={0} direction="up">
-          <h1 className="text-[#17161B] text-[32px] sm:text-[44px] font-normal leading-[1.05] mb-3">
-            Need a <em className="not-italic text-[#71757C]">job</em> done?
+          <h1 className="text-ink text-[32px] sm:text-[44px] font-normal leading-[1.05] mb-3">
+            Need a <em className="not-italic text-graphite">job</em> done?
           </h1>
-          <p className="text-[#55545C] text-[16px] sm:text-[18px] leading-[1.4] mb-2">
+          <p className="text-graphite text-[16px] sm:text-[18px] leading-[1.4] mb-2">
             Tell us what you need and a manager will confirm the details before any Butler is booked.
           </p>
-          <a href="tel:+12246339328" className="inline-flex items-center gap-2 text-[#17161B] text-[14.5px] font-medium mb-10">
+          <a href="tel:+12246339328" className="inline-flex items-center gap-2 text-ink text-[14.5px] font-medium mb-10">
             Or call us (224) 633-9328
           </a>
         </Animate>
@@ -51,8 +51,8 @@ export default function RequestPage() {
         {submitted ? (
           <Animate delay={0} direction="up">
             <div className="rounded-[16px] border border-black/10 bg-white p-6 sm:p-8 text-center">
-              <h3 className="text-[#17161B] text-[18px] font-semibold mb-1">Request sent</h3>
-              <p className="text-[#55545C] text-[14.5px]">
+              <h3 className="text-ink text-[18px] font-semibold mb-1">Request sent</h3>
+              <p className="text-graphite text-[14.5px]">
                 Thanks — a manager will review your request and follow up shortly. Nothing has been charged.
               </p>
             </div>
