@@ -5,6 +5,7 @@ import SiteFooter from '@/components/SiteFooter';
 import {
   acceptJob,
   addButler,
+  adminLogin,
   Butler,
   butlerLoginByContact,
   butlerLoginById,
@@ -15,6 +16,7 @@ import {
   Job,
 } from '@/lib/store';
 import { fieldWrap, inputClass, labelClass, primaryBtn } from '@/components/FormControls';
+import { withBase } from '@/lib/url';
 
 const JOB_TYPE_OPTIONS = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanouts', 'Dog walking', 'Odd jobs'];
 
@@ -55,6 +57,10 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
       butlerLoginById(created.id);
       onAuthed(created);
     } else {
+      if (adminLogin(signin.contact, signin.password)) {
+        window.location.href = withBase('admin/');
+        return;
+      }
       const found = butlerLoginByContact(signin.contact);
       if (found) {
         onAuthed(found);
