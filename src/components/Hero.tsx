@@ -1,14 +1,106 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import FadeIn from '@/components/FadeIn';
 import { withBase } from '@/lib/url';
 
 // Alternates hero background between these clips: lawn mowing plays first,
-// then hands off to snow shoveling on end, looping back and forth.
+// then crossfades into snow shoveling, looping back and forth. Both clips
+// play back slightly slowed down so the ending beat (the wave) reads clearly.
 const HERO_VIDEOS = [
   'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_153138_b125f92c-1be7-4a81-8cb8-57ccf1c62495.mp4',
   'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_154221_25a6b3a3-7c6d-45a7-bae6-c039f596092c.mp4',
 ];
+const PLAYBACK_RATE = 0.9;
+const FADE_MS = 800;
+const LEAD_S = 0.35; // start the crossfade this many seconds before a clip's natural end
+
+// Two persistent <video> elements crossfade into each other instead of being
+// remounted, so the next clip is already preloaded and playing by the time
+// its fade-in starts — no black flash, no re-fetch stutter.
+function HeroVideoBackground() {
+  const videoARef = useRef<HTMLVideoElement>(null);
+  const videoBRef = useRef<HTMLVideoElement>(null);
+  const [aIsFront, setAIsFront] = useState(true);
+
+  useEffect(() => {
+    const a = videoARef.current;
+    const b = videoBRef.current;
+    if (!a || !b) return;
+
+    let front = a;
+    let back = b;
+    let frontIndex = 0;
+    let transitioning = false;
+
+    function applyRate() {
+      a!.playbackRate = PLAYBACK_RATE;
+      b!.playbackRate = PLAYBACK_RATE;
+    }
+
+    function crossfade() {
+      if (transitioning) return;
+      transitioning = true;
+      back.currentTime = 0;
+      applyRate();
+      back.play().catch(() => {});
+      setAIsFront(back === a);
+      frontIndex = (frontIndex + 1) % HERO_VIDEOS.length;
+      window.setTimeout(() => {
+        front.pause();
+        const tmp = front;
+        front = back;
+        back = tmp;
+        const nextIndex = (frontIndex + 1) % HERO_VIDEOS.length;
+        back.src = HERO_VIDEOS[nextIndex];
+        back.load();
+        transitioning = false;
+      }, FADE_MS);
+    }
+
+    function onTimeUpdate(video: HTMLVideoElement) {
+      if (transitioning || video !== front || !video.duration) return;
+      if (video.currentTime >= video.duration - LEAD_S) crossfade();
+    }
+
+    const onATime = () => onTimeUpdate(a);
+    const onBTime = () => onTimeUpdate(b);
+    a.addEventListener('timeupdate', onATime);
+    b.addEventListener('timeupdate', onBTime);
+
+    front.src = HERO_VIDEOS[0];
+    front.currentTime = 0;
+    applyRate();
+    front.play().catch(() => {});
+    back.src = HERO_VIDEOS[1];
+    back.load();
+
+    return () => {
+      a.removeEventListener('timeupdate', onATime);
+      b.removeEventListener('timeupdate', onBTime);
+    };
+  }, []);
+
+  return (
+    <>
+      <video
+        ref={videoARef}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[800ms] ${
+          aIsFront ? 'opacity-100 z-[1]' : 'opacity-0 z-0'
+        }`}
+        muted
+        playsInline
+      />
+      <video
+        ref={videoBRef}
+        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[800ms] ${
+          aIsFront ? 'opacity-0 z-0' : 'opacity-100 z-[1]'
+        }`}
+        muted
+        playsInline
+      />
+    </>
+  );
+}
 
 const NAV_LINKS = [
   { label: 'For Neighbors', href: withBase('request/') },
@@ -38,19 +130,9 @@ function BowtieMark({ className = '' }: { className?: string }) {
 }
 
 export default function Hero() {
-  const [videoIndex, setVideoIndex] = useState(0);
-
   return (
     <section className="relative w-full h-screen overflow-hidden bg-ink flex flex-col">
-      <video
-        key={videoIndex}
-        className="absolute inset-0 w-full h-full object-cover"
-        src={HERO_VIDEOS[videoIndex]}
-        autoPlay
-        muted
-        playsInline
-        onEnded={() => setVideoIndex((i) => (i + 1) % HERO_VIDEOS.length)}
-      />
+      <HeroVideoBackground />
 
       <div className="relative z-10 flex flex-col h-full">
         <nav className="px-6 md:px-12 lg:px-16 pt-6 flex items-center justify-between">
