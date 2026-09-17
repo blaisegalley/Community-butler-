@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://blaisegalley.github.io/Community-butler-/sitemap.xml
+Sitemap: https://www.thecommunitybutler.com/sitemap.xml
