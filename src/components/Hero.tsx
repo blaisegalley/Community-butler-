@@ -1,17 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import FadeIn from '@/components/FadeIn';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { withBase } from '@/lib/url';
+
+const VIDEO_CDN = 'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/';
+const PHOTO_CDN = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/';
 
 // Hero background loops through these clips in order, crossfading between
 // each: snow shoveling, moving a couch, walking a dog, mowing the lawn,
-// then weeding — back to the start.
+// then weeding — back to the start. Each carries a poster frame so the
+// first paint shows the scene instead of a black rectangle.
 const HERO_VIDEOS = [
-  'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_154221_25a6b3a3-7c6d-45a7-bae6-c039f596092c.mp4', // snow shoveling
-  'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_181144_57446324-9c94-419a-8d11-125309bf9312.mp4', // moving a couch
-  'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_182639_e2b0cbfd-00f7-4784-adb3-14c8af8b0a12.mp4', // walking a dog
-  'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_153138_b125f92c-1be7-4a81-8cb8-57ccf1c62495.mp4', // mowing the lawn
-  'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/hf_20260916_181548_5fa38635-59ee-467a-a3c4-2d44a97a88ae.mp4', // weeding
+  { src: `${VIDEO_CDN}hf_20260916_154221_25a6b3a3-7c6d-45a7-bae6-c039f596092c.mp4`, poster: `${PHOTO_CDN}241eb5fd-50a7-449b-bd8c-efb102ebaa9a.jpg` }, // snow shoveling
+  { src: `${VIDEO_CDN}hf_20260916_181144_57446324-9c94-419a-8d11-125309bf9312.mp4`, poster: `${PHOTO_CDN}5de11fda-5b32-4707-a1f8-9a98f4fac2e4.jpg` }, // moving a couch
+  { src: `${VIDEO_CDN}hf_20260916_182639_e2b0cbfd-00f7-4784-adb3-14c8af8b0a12.mp4`, poster: `${PHOTO_CDN}3b86f63d-f608-48f5-8e69-7ef27c7fbbb5.jpg` }, // walking a dog
+  { src: `${VIDEO_CDN}hf_20260916_153138_b125f92c-1be7-4a81-8cb8-57ccf1c62495.mp4`, poster: `${PHOTO_CDN}799ab5f9-49b1-473b-a6c6-a863466ad769.jpg` }, // mowing the lawn
+  { src: `${VIDEO_CDN}hf_20260916_181548_5fa38635-59ee-467a-a3c4-2d44a97a88ae.mp4`, poster: `${PHOTO_CDN}3b351f2a-8693-450b-8791-f81451de9031.jpg` }, // weeding
 ];
 // A single <video> per clip, remounted via `key` on each switch, with
 // autoPlay/src/muted/playsInline set declaratively — the plain, reliable
@@ -23,7 +28,8 @@ const HERO_VIDEOS = [
 // the video just sits on its first frame with nothing to interact with.
 // If that happens (the play() promise rejects), show an explicit tap-to-play
 // button — a real user gesture is always allowed to start playback.
-function HeroVideo({ src, onEnded }: { src: string; onEnded: () => void }) {
+function HeroVideo({ src, poster, onEnded }: { src: string; poster: string; onEnded: () => void }) {
+  const reduceMotion = usePrefersReducedMotion();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [visible, setVisible] = useState(false);
   const [needsTap, setNeedsTap] = useState(false);
@@ -50,8 +56,13 @@ function HeroVideo({ src, onEnded }: { src: string; onEnded: () => void }) {
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"
-        style={{ opacity: visible ? 1 : 0, transition: 'opacity 700ms ease' }}
+        style={
+          reduceMotion
+            ? undefined
+            : { opacity: visible ? 1 : 0, transition: 'opacity 700ms ease' }
+        }
         src={src}
+        poster={poster}
         autoPlay
         muted
         playsInline
@@ -62,7 +73,9 @@ function HeroVideo({ src, onEnded }: { src: string; onEnded: () => void }) {
           type="button"
           onClick={handleTap}
           aria-label="Play background video"
-          className="absolute inset-0 z-20 flex items-center justify-center bg-black/25"
+          // Sits above the video/scrim but below the nav and CTAs (z-10), so a
+          // blocked autoplay never makes the header unclickable.
+          className="absolute inset-0 z-[6] flex items-center justify-center bg-black/25"
         >
           <span className="w-16 h-16 rounded-full bg-white/95 flex items-center justify-center shadow-lg">
             <svg viewBox="0 0 24 24" className="w-6 h-6 ml-1" fill="#0B0F0D">
@@ -77,10 +90,12 @@ function HeroVideo({ src, onEnded }: { src: string; onEnded: () => void }) {
 
 function HeroVideoBackground() {
   const [videoIndex, setVideoIndex] = useState(0);
+  const clip = HERO_VIDEOS[videoIndex];
   return (
     <HeroVideo
       key={videoIndex}
-      src={HERO_VIDEOS[videoIndex]}
+      src={clip.src}
+      poster={clip.poster}
       onEnded={() => setVideoIndex((i) => (i + 1) % HERO_VIDEOS.length)}
     />
   );
@@ -113,14 +128,56 @@ function BowtieMark({ className = '' }: { className?: string }) {
   );
 }
 
+function MenuIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
+const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-ink';
+
 export default function Hero() {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
   return (
     <section className="relative w-full h-screen overflow-hidden bg-ink flex flex-col">
       <HeroVideoBackground />
 
+      <div
+        className="absolute inset-0 z-[5] pointer-events-none"
+        style={{
+          background:
+            'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.12) 32%, rgba(0,0,0,0.32) 62%, rgba(0,0,0,0.80) 100%)',
+        }}
+      />
+
       <div className="relative z-10 flex flex-col h-full">
-        <nav className="px-6 md:px-12 lg:px-16 pt-6 flex items-center justify-between">
-          <a href={withBase('')} className="flex items-center gap-2.5 text-white">
+        <nav className="px-6 md:px-12 lg:px-16 pt-6 flex items-center justify-between gap-3">
+          <a href={withBase('')} className={`flex items-center gap-2.5 text-white rounded-md ${focusRing}`}>
             <BowtieMark className="w-[30px] h-[18px] sm:w-[34px] sm:h-[20px]" />
             <span className="text-[15px] sm:text-[20px] font-medium leading-none tracking-[-0.01em] uppercase whitespace-nowrap">
               Community Butler
@@ -132,20 +189,76 @@ export default function Hero() {
               <a
                 key={link.label}
                 href={link.href}
-                className="text-white text-[13px] font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors"
+                className={`text-white text-[13px] font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors rounded-sm ${focusRing}`}
               >
                 {link.label}
               </a>
             ))}
           </div>
 
-          <a
-            href={withBase('request/')}
-            className="rounded-full px-6 py-3 bg-sand text-ink text-[13px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:bg-white transition-colors"
-          >
-            Post a Job
-          </a>
+          <div className="flex items-center gap-2">
+            <a
+              href={withBase('request/')}
+              className={`hidden sm:inline-block rounded-full px-6 py-3 bg-sand text-ink text-[13px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:bg-white transition-colors ${focusRing}`}
+            >
+              Post a Job
+            </a>
+
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+              aria-expanded={menuOpen}
+              aria-controls="hero-mobile-menu"
+              className={`md:hidden w-11 h-11 rounded-full liquid-glass flex items-center justify-center text-white ${focusRing}`}
+            >
+              <MenuIcon />
+            </button>
+          </div>
         </nav>
+
+        {menuOpen && (
+          <div id="hero-mobile-menu" className="md:hidden fixed inset-0 z-50 bg-ink flex flex-col">
+            <div className="px-6 pt-6 flex items-center justify-end">
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close menu"
+                className={`w-11 h-11 rounded-full border border-white/20 flex items-center justify-center text-white ${focusRing}`}
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            <nav className="flex-1 flex flex-col justify-center gap-2 px-8">
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className={`text-white text-2xl font-medium py-3 rounded-md ${focusRing}`}
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+
+            <div className="px-8 pb-12 flex flex-col gap-3">
+              <a
+                href={withBase('request/')}
+                className={`text-center bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] ${focusRing}`}
+              >
+                Post a Job
+              </a>
+              <a
+                href={withBase('auth/?mode=signup')}
+                className={`text-center border border-white/25 text-white rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] ${focusRing}`}
+              >
+                Become a Butler
+              </a>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 flex flex-col justify-end pb-12 lg:pb-16 px-6 md:px-12 lg:px-16">
           <div className="lg:grid lg:grid-cols-2 lg:items-end lg:gap-8">

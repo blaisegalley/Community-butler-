@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 type Direction = 'up' | 'down' | 'left' | 'right' | 'scale';
 
@@ -23,6 +24,12 @@ export default function Animate({
   className = '',
   direction = 'up',
 }: AnimateProps) {
+  const reduceMotion = usePrefersReducedMotion();
+
+  if (reduceMotion) {
+    return <div className={className}>{children}</div>;
+  }
+
   return (
     <div
       className={`opacity-0 ${directionClass[direction]} ${className}`}

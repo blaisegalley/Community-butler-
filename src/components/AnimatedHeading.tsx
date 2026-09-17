@@ -1,4 +1,5 @@
 import { CSSProperties, useEffect, useState } from 'react';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 interface AnimatedHeadingProps {
   text: string;
@@ -19,6 +20,7 @@ export default function AnimatedHeading({
   charDelay = 30,
   charDuration = 500,
 }: AnimatedHeadingProps) {
+  const reduceMotion = usePrefersReducedMotion();
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
@@ -27,6 +29,18 @@ export default function AnimatedHeading({
   }, [initialDelay]);
 
   const lines = text.split('\n');
+
+  if (reduceMotion) {
+    return (
+      <h1 className={className} style={style}>
+        {lines.map((line, lineIndex) => (
+          <span key={lineIndex} style={{ display: 'block' }}>
+            {line}
+          </span>
+        ))}
+      </h1>
+    );
+  }
 
   return (
     <h1 className={className} style={style}>

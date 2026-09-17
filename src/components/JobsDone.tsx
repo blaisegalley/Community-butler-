@@ -1,5 +1,6 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import Animate from '@/components/Animate';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { addJob } from '@/lib/store';
 
 interface ServiceCard {
@@ -7,6 +8,8 @@ interface ServiceCard {
   title: string;
   accent: string;
   video: string;
+  /** Still frame shown before the clip loads, and instead of it under reduced motion. */
+  poster: string;
   icon: ReactNode;
   /** Value stored on the job record, matching the request form's service names. */
   service: string;
@@ -89,6 +92,7 @@ const SERVICES: ServiceCard[] = [
     title: 'Yard work,',
     accent: 'done right.',
     video: `${CDN_VIDEO}hf_20260916_153138_b125f92c-1be7-4a81-8cb8-57ccf1c62495.mp4`,
+    poster: `${CDN_PHOTO}8bfc9651-4902-49e6-9614-7c62a7a68a6c.jpg`,
     icon: <MowerIcon />,
     service: 'Yard work',
     jobTitle: 'Yard Work',
@@ -101,6 +105,7 @@ const SERVICES: ServiceCard[] = [
     title: 'Snow removal,',
     accent: 'handled fast.',
     video: `${CDN_VIDEO}hf_20260916_154221_25a6b3a3-7c6d-45a7-bae6-c039f596092c.mp4`,
+    poster: `${CDN_PHOTO}2928118b-22a7-4cfa-930c-1203538e04c4.jpg`,
     icon: <SnowflakeIcon />,
     service: 'Snow shoveling',
     jobTitle: 'Snow Removal',
@@ -113,6 +118,7 @@ const SERVICES: ServiceCard[] = [
     title: 'Moving day,',
     accent: 'made easy.',
     video: `${CDN_VIDEO}hf_20260916_181144_57446324-9c94-419a-8d11-125309bf9312.mp4`,
+    poster: `${CDN_PHOTO}0d9495f0-0cbd-4982-bf78-2193e396edf9.jpg`,
     icon: <BoxIcon />,
     service: 'Moving help',
     jobTitle: 'Moving Help',
@@ -125,6 +131,7 @@ const SERVICES: ServiceCard[] = [
     title: 'Raking leaves,',
     accent: 'taken care of.',
     video: `${CDN_VIDEO}hf_20260917_022420_7f2e762b-58eb-483c-aad8-7a41c3863375.mp4`,
+    poster: `${CDN_PHOTO}cb7882a8-56d2-4689-8857-648f601a9b31.jpg`,
     icon: <LeafIcon />,
     service: 'Raking leaves',
     jobTitle: 'Raking Leaves',
@@ -137,6 +144,7 @@ const SERVICES: ServiceCard[] = [
     title: 'Dog walks,',
     accent: 'covered daily.',
     video: `${CDN_VIDEO}hf_20260916_182639_e2b0cbfd-00f7-4784-adb3-14c8af8b0a12.mp4`,
+    poster: `${CDN_PHOTO}019054c5-e6dc-4c16-89ea-07fabe200b01.jpg`,
     icon: <PawIcon />,
     service: 'Dog walking',
     jobTitle: 'Dog Walking',
@@ -152,7 +160,44 @@ const inputClass =
   'w-full border border-black/15 rounded-[10px] px-[14px] py-3 text-[14.5px] text-[#0B0B0C] bg-white outline-none focus:border-black/40 transition-colors';
 const labelClass = 'block text-[#0B0B0C] text-[13px] font-medium mb-[6px]';
 
+/**
+ * Shows the poster frame until the card is near the viewport, then loads and
+ * plays the clip; pauses again once it scrolls away. Under reduced motion the
+ * clip is never fetched and the poster stands in for it.
+ */
+function CardVideo({ src, poster, alt }: { src: string; poster: string; alt: string }) {
+  const reduceMotion = usePrefersReducedMotion();
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    const el = videoRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.play().catch(() => {});
+        } else {
+          el.pause();
+        }
+      },
+      { rootMargin: '250px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [reduceMotion]);
+
+  const className = 'absolute inset-0 w-full h-full object-cover opacity-75 transition-opacity duration-500 group-hover:opacity-95';
+
+  if (reduceMotion) {
+    return <img className={className} src={poster} alt={alt} loading="lazy" />;
+  }
+
+  return <video ref={videoRef} className={className} src={src} poster={poster} muted loop playsInline preload="none" />;
+}
+
 export default function JobsDone() {
+  const reduceMotion = usePrefersReducedMotion();
   const [active, setActive] = useState<ServiceCard | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [sent, setSent] = useState(false);
@@ -192,8 +237,14 @@ export default function JobsDone() {
     <>
       <section className="w-full bg-[#0A0A0B] py-20 sm:py-28 overflow-hidden">
         <div
-          className="w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px] transition-all duration-700 ease-[cubic-bezier(0.7,0,0.3,1)]"
-          style={active ? { transform: 'scale(0.92)', opacity: 0.35, filter: 'blur(3px)', pointerEvents: 'none' } : undefined}
+          className={`w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px] ${reduceMotion ? '' : 'transition-all duration-700 ease-[cubic-bezier(0.7,0,0.3,1)]'}`}
+          style={
+            active
+              ? reduceMotion
+                ? { opacity: 0.35, pointerEvents: 'none' }
+                : { transform: 'scale(0.92)', opacity: 0.35, filter: 'blur(3px)', pointerEvents: 'none' }
+              : undefined
+          }
         >
           <Animate delay={0} direction="up" className="max-w-[640px] mb-14 sm:mb-16">
             <p className="text-chrome/70 text-[13px] font-semibold tracking-[0.08em] uppercase mb-3">
@@ -216,14 +267,7 @@ export default function JobsDone() {
                   aria-label={`Book ${service.jobTitle}`}
                   className="group relative block w-full text-left aspect-[3/4] rounded-[28px] overflow-hidden bg-[#131315] border border-white/[0.06] transition-all duration-300 hover:-translate-y-1 hover:border-white/20"
                 >
-                  <video
-                    className="absolute inset-0 w-full h-full object-cover opacity-75 transition-opacity duration-500 group-hover:opacity-95"
-                    src={service.video}
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                  />
+                  <CardVideo src={service.video} poster={service.poster} alt={service.jobTitle} />
                   <div
                     className="absolute inset-0"
                     style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.05) 35%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.92) 100%)' }}
@@ -251,10 +295,14 @@ export default function JobsDone() {
       </section>
 
       <div
-        className="fixed inset-0 z-[100] bg-white overflow-y-auto transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className={`fixed inset-0 z-[100] bg-white overflow-y-auto ${reduceMotion ? 'transition-opacity duration-200' : 'transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]'}`}
         style={{
           transformOrigin: 'left center',
-          transform: active ? 'perspective(1800px) rotateY(0deg) scale(1)' : 'perspective(1800px) rotateY(-35deg) scale(0.85)',
+          transform: reduceMotion
+            ? undefined
+            : active
+              ? 'perspective(1800px) rotateY(0deg) scale(1)'
+              : 'perspective(1800px) rotateY(-35deg) scale(0.85)',
           opacity: active ? 1 : 0,
           pointerEvents: active ? 'auto' : 'none',
         }}
