@@ -18,6 +18,7 @@ export default {
         charcoal: '#161A17',
         silver: '#C7CDC5',
         ember: '#C6602B',
+        chrome: '#D8DEE2',
       },
     },
   },
