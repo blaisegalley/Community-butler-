@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.thecommunitybutler.com/</loc><priority>1.0</priority></url>
-  <url><loc>https://www.thecommunitybutler.com/request/</loc><priority>0.8</priority></url>
-  <url><loc>https://www.thecommunitybutler.com/auth/</loc><priority>0.6</priority></url>
+  <url><loc>https://blaisegalley.github.io/Community-butler-/</loc><priority>1.0</priority></url>
+  <url><loc>https://blaisegalley.github.io/Community-butler-/request/</loc><priority>0.8</priority></url>
+  <url><loc>https://blaisegalley.github.io/Community-butler-/auth/</loc><priority>0.6</priority></url>
 </urlset>
