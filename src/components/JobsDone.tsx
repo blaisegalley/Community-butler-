@@ -187,7 +187,7 @@ function CardVideo({ src, poster, alt }: { src: string; poster: string; alt: str
     return () => io.disconnect();
   }, [reduceMotion]);
 
-  const className = 'absolute inset-0 w-full h-full object-cover opacity-75 transition-opacity duration-500 group-hover:opacity-95';
+  const className = 'absolute inset-0 w-full h-full object-cover opacity-75 transition-opacity duration-300 group-hover:opacity-95';
 
   if (reduceMotion) {
     return <img className={className} src={poster} alt={alt} loading="lazy" />;
@@ -237,12 +237,16 @@ export default function JobsDone() {
     <>
       <section className="w-full bg-[#0A0A0B] py-20 sm:py-28 overflow-hidden">
         <div
-          className={`w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px] ${reduceMotion ? '' : 'transition-all duration-700 ease-[cubic-bezier(0.7,0,0.3,1)]'}`}
+          className={`w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px] ${
+            reduceMotion
+              ? ''
+              : `transition-[transform,opacity] ease-[cubic-bezier(0.16,1,0.3,1)] ${active ? 'duration-[400ms]' : 'duration-200'}`
+          }`}
           style={
             active
               ? reduceMotion
                 ? { opacity: 0.35, pointerEvents: 'none' }
-                : { transform: 'scale(0.92)', opacity: 0.35, filter: 'blur(3px)', pointerEvents: 'none' }
+                : { transform: 'scale(0.94)', opacity: 0.35, pointerEvents: 'none' }
               : undefined
           }
         >
@@ -265,7 +269,7 @@ export default function JobsDone() {
                   type="button"
                   onClick={() => openJob(service)}
                   aria-label={`Book ${service.jobTitle}`}
-                  className="group relative block w-full text-left aspect-[3/4] rounded-[28px] overflow-hidden bg-[#131315] border border-white/[0.06] transition-all duration-300 hover:-translate-y-1 hover:border-white/20"
+                  className="group relative block w-full text-left aspect-[3/4] rounded-[28px] overflow-hidden bg-[#131315] border border-white/[0.06] transition-[transform,border-color] duration-200 hover:-translate-y-1 hover:border-white/20"
                 >
                   <CardVideo src={service.video} poster={service.poster} alt={service.jobTitle} />
                   <div
@@ -295,7 +299,11 @@ export default function JobsDone() {
       </section>
 
       <div
-        className={`fixed inset-0 z-[100] bg-white overflow-y-auto ${reduceMotion ? 'transition-opacity duration-200' : 'transition-[transform,opacity] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]'}`}
+        className={`fixed inset-0 z-[100] bg-white overflow-y-auto ${
+          reduceMotion
+            ? 'transition-opacity duration-200'
+            : `transition-[transform,opacity] ease-[cubic-bezier(0.16,1,0.3,1)] ${active ? 'duration-[400ms]' : 'duration-200'}`
+        }`}
         style={{
           transformOrigin: 'left center',
           transform: reduceMotion

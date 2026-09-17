@@ -8,7 +8,7 @@ interface FadeInProps {
   className?: string;
 }
 
-export default function FadeIn({ children, delay = 0, duration = 1000, className = '' }: FadeInProps) {
+export default function FadeIn({ children, delay = 0, duration = 400, className = '' }: FadeInProps) {
   const reduceMotion = usePrefersReducedMotion();
   const [visible, setVisible] = useState(false);
 

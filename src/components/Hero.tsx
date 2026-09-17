@@ -275,19 +275,18 @@ export default function Hero() {
                 text={'Real jobs, done\nby butlers next door.'}
                 className="text-white text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal leading-[0.95] mb-4"
                 style={{ letterSpacing: '-0.04em' }}
-                initialDelay={200}
-                charDelay={30}
-                charDuration={500}
+                delay={100}
+                duration={400}
               />
 
-              <FadeIn delay={800} duration={1000}>
+              <FadeIn delay={250}>
                 <p className="text-silver text-base md:text-lg max-w-md mb-8">
                   Community Butler connects busy neighbors with trained, motivated
                   high-school butlers for the everyday tasks that pile up.
                 </p>
               </FadeIn>
 
-              <FadeIn delay={1200} duration={1000}>
+              <FadeIn delay={350}>
                 <div className="flex flex-wrap gap-4">
                   <a
                     href={withBase('request/')}
@@ -305,7 +304,7 @@ export default function Hero() {
               </FadeIn>
             </div>
 
-            <FadeIn delay={1400} duration={1000} className="hidden lg:flex justify-end">
+            <FadeIn delay={450} className="hidden lg:flex justify-end">
               <div className="liquid-glass rounded-2xl px-6 py-4" style={{ background: 'rgba(31,51,39,0.45)' }}>
                 <p className="text-silver text-[10px] font-semibold uppercase tracking-[0.12em] mb-1">
                   Services

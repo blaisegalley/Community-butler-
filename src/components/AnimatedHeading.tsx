@@ -5,36 +5,42 @@ interface AnimatedHeadingProps {
   text: string;
   className?: string;
   style?: CSSProperties;
-  initialDelay?: number;
-  charDelay?: number;
-  charDuration?: number;
+  delay?: number;
+  duration?: number;
+  /** Stagger between lines. */
+  lineDelay?: number;
 }
 
-/** Splits `text` on \n into lines, then each line into characters, and
- * fades/slides each one in with a per-character stagger. */
+const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+
+/**
+ * Splits `text` on \n into lines and fades each line up as a whole. Animating
+ * per character read as decoration rather than meaning, and staggering 36
+ * letters held the headline mid-animation for close to two seconds.
+ */
 export default function AnimatedHeading({
   text,
   className = '',
   style,
-  initialDelay = 200,
-  charDelay = 30,
-  charDuration = 500,
+  delay = 0,
+  duration = 400,
+  lineDelay = 80,
 }: AnimatedHeadingProps) {
   const reduceMotion = usePrefersReducedMotion();
   const [animate, setAnimate] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setAnimate(true), initialDelay);
+    const timer = setTimeout(() => setAnimate(true), delay);
     return () => clearTimeout(timer);
-  }, [initialDelay]);
+  }, [delay]);
 
   const lines = text.split('\n');
 
   if (reduceMotion) {
     return (
       <h1 className={className} style={style}>
-        {lines.map((line, lineIndex) => (
-          <span key={lineIndex} style={{ display: 'block' }}>
+        {lines.map((line, i) => (
+          <span key={i} style={{ display: 'block' }}>
             {line}
           </span>
         ))}
@@ -44,25 +50,18 @@ export default function AnimatedHeading({
 
   return (
     <h1 className={className} style={style}>
-      {lines.map((line, lineIndex) => (
-        <span key={lineIndex} style={{ display: 'block' }}>
-          {line.split('').map((char, charIndex) => {
-            const delay = lineIndex * line.length * charDelay + charIndex * charDelay;
-            return (
-              <span
-                key={charIndex}
-                style={{
-                  display: 'inline-block',
-                  opacity: animate ? 1 : 0,
-                  transform: animate ? 'translateX(0)' : 'translateX(-18px)',
-                  transition: `opacity ${charDuration}ms ease, transform ${charDuration}ms ease`,
-                  transitionDelay: `${delay}ms`,
-                }}
-              >
-                {char === ' ' ? ' ' : char}
-              </span>
-            );
-          })}
+      {lines.map((line, i) => (
+        <span
+          key={i}
+          style={{
+            display: 'block',
+            opacity: animate ? 1 : 0,
+            transform: animate ? 'translateY(0)' : 'translateY(14px)',
+            transition: `opacity ${duration}ms ${EASE}, transform ${duration}ms ${EASE}`,
+            transitionDelay: `${i * lineDelay}ms`,
+          }}
+        >
+          {line}
         </span>
       ))}
     </h1>
