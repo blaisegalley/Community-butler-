@@ -3,3 +3,7 @@ dist
 dist-ssr
 *.local
 .DS_Store
+
+# Python bytecode caches (regenerated on every run)
+__pycache__/
+*.pyc
