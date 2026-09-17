@@ -75,6 +75,14 @@ function PawIcon() {
   );
 }
 
+function ChevronIcon({ dir }: { dir: 'left' | 'right' }) {
+  return (
+    <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d={dir === 'left' ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'} />
+    </svg>
+  );
+}
+
 function ArrowLeftIcon() {
   return (
     <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -198,6 +206,7 @@ function CardVideo({ src, poster, alt }: { src: string; poster: string; alt: str
 
 export default function JobsDone() {
   const reduceMotion = usePrefersReducedMotion();
+  const railRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<ServiceCard | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [sent, setSent] = useState(false);
@@ -215,6 +224,15 @@ export default function JobsDone() {
       window.removeEventListener('keydown', onKey);
     };
   }, [active]);
+
+  /** Steps the rail one card in `dir`, measuring the real card width so the gap is included. */
+  function nudge(dir: 1 | -1) {
+    const rail = railRef.current;
+    if (!rail) return;
+    const card = rail.firstElementChild as HTMLElement | null;
+    const step = card ? card.offsetWidth + 28 : rail.clientWidth * 0.8;
+    rail.scrollBy({ left: dir * step, behavior: reduceMotion ? 'auto' : 'smooth' });
+  }
 
   function openJob(service: ServiceCard) {
     setForm(EMPTY_FORM);
@@ -262,9 +280,20 @@ export default function JobsDone() {
             </p>
           </Animate>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
-            {SERVICES.map((service, i) => (
-              <Animate key={service.id} delay={150 + i * 100} direction="up">
+          <div className="relative">
+            <div
+              ref={railRef}
+              className={`no-scrollbar flex gap-6 sm:gap-7 overflow-x-auto snap-x snap-mandatory pb-1 -mx-5 px-5 sm:-mx-8 sm:px-8 md:-mx-[82px] md:px-[82px] ${
+                reduceMotion ? '' : 'scroll-smooth'
+              }`}
+            >
+              {SERVICES.map((service, i) => (
+                <Animate
+                  key={service.id}
+                  delay={150 + i * 100}
+                  direction="up"
+                  className="snap-start shrink-0 w-[78vw] sm:w-[320px] lg:w-[360px]"
+                >
                 <button
                   type="button"
                   onClick={() => openJob(service)}
@@ -292,8 +321,26 @@ export default function JobsDone() {
                     </div>
                   </div>
                 </button>
-              </Animate>
-            ))}
+                </Animate>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => nudge(-1)}
+              aria-label="Previous jobs"
+              className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <ChevronIcon dir="left" />
+            </button>
+            <button
+              type="button"
+              onClick={() => nudge(1)}
+              aria-label="More jobs"
+              className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            >
+              <ChevronIcon dir="right" />
+            </button>
           </div>
         </div>
       </section>

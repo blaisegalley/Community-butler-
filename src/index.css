@@ -75,3 +75,7 @@ body {
   animation: bar-grow 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
+
+/* Horizontal rails keep their swipe affordance without a visible scrollbar. */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
