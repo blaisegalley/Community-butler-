@@ -4,6 +4,9 @@ import FadeIn from '@/components/FadeIn';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { withBase } from '@/lib/url';
 
+/** How long to let the browser's own autoplay settle before offering a tap target. */
+const AUTOPLAY_GRACE_MS = 2000;
+
 const VIDEO_CDN = 'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/';
 const PHOTO_CDN = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/';
 
@@ -24,10 +27,12 @@ const HERO_VIDEOS = [
 // style, not a Tailwind arbitrary class) softens the cut between clips
 // without needing two video elements playing at once.
 //
-// Some browsers silently block autoplay even when muted, in which case
-// the video just sits on its first frame with nothing to interact with.
-// If that happens (the play() promise rejects), show an explicit tap-to-play
-// button — a real user gesture is always allowed to start playback.
+// Playback is left entirely to the autoPlay attribute. Calling play()
+// alongside it races the browser's own autoplay and rejects with an
+// AbortError even when the clip is playing perfectly well, which used to
+// surface a tap-to-play button over a working video. Instead, wait out a
+// grace period and only offer the button if the element is genuinely still
+// paused — the case where a browser really did block muted autoplay.
 function HeroVideo({ src, poster, onEnded }: { src: string; poster: string; onEnded: () => void }) {
   const reduceMotion = usePrefersReducedMotion();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -36,12 +41,14 @@ function HeroVideo({ src, poster, onEnded }: { src: string; poster: string; onEn
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setVisible(true));
-    const video = videoRef.current;
-    const playResult = video?.play();
-    if (playResult) {
-      playResult.catch(() => setNeedsTap(true));
-    }
-    return () => cancelAnimationFrame(id);
+    const stillStuck = setTimeout(() => {
+      const video = videoRef.current;
+      if (video && video.paused) setNeedsTap(true);
+    }, AUTOPLAY_GRACE_MS);
+    return () => {
+      cancelAnimationFrame(id);
+      clearTimeout(stillStuck);
+    };
   }, []);
 
   function handleTap() {
@@ -67,6 +74,7 @@ function HeroVideo({ src, poster, onEnded }: { src: string; poster: string; onEn
         muted
         playsInline
         onEnded={onEnded}
+        onPlaying={() => setNeedsTap(false)}
       />
       {needsTap && (
         <button
