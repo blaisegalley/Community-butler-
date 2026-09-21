@@ -209,7 +209,9 @@ export default function JobsDone() {
   const railRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<ServiceCard | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [sent, setSent] = useState(false);
+  const [sentJobId, setSentJobId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!active) return;
@@ -236,15 +238,29 @@ export default function JobsDone() {
 
   function openJob(service: ServiceCard) {
     setForm(EMPTY_FORM);
-    setSent(false);
+    setSentJobId(null);
+    setError('');
     setActive(service);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  // See RequestPage: the confirmation must wait for the write to land.
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!active) return;
-    addJob({ ...form, service: active.service, budget: '' });
-    setSent(true);
+    setSubmitting(true);
+    setError('');
+    try {
+      const job = await addJob({ ...form, service: active.service, budget: '' });
+      setSentJobId(job.id);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'We could not send that request. Check your connection and try again.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function update(field: keyof typeof EMPTY_FORM, value: string) {
@@ -408,7 +424,7 @@ export default function JobsDone() {
               </div>
 
               <div>
-                {sent ? (
+                {sentJobId ? (
                   <div className="text-center py-10 px-5">
                     <h3 className="text-[#0B0B0C] text-[22px] font-semibold mb-3">Request sent</h3>
                     <p className="text-[#4A4A4E] text-[15px] leading-[1.6]">
@@ -424,6 +440,11 @@ export default function JobsDone() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="flex flex-col gap-[14px]">
+                    {error && (
+                      <div className="rounded-[10px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[13px] px-4 py-3">
+                        {error}
+                      </div>
+                    )}
                     <div>
                       <label className={labelClass} htmlFor="book-name">Your name</label>
                       <input id="book-name" className={inputClass} required value={form.name} onChange={(e) => update('name', e.target.value)} />
@@ -450,9 +471,10 @@ export default function JobsDone() {
                     </div>
                     <button
                       type="submit"
-                      className="mt-[6px] bg-[#0B0B0C] text-white rounded-[12px] py-[15px] text-[15px] font-medium"
+                      disabled={submitting}
+                      className="mt-[6px] bg-[#0B0B0C] text-white rounded-[12px] py-[15px] text-[15px] font-medium disabled:opacity-40"
                     >
-                      Book This Job
+                      {submitting ? 'Sending\u2026' : 'Book This Job'}
                     </button>
                   </form>
                 )}

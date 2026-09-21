@@ -8,7 +8,9 @@ import { fieldWrap, inputClass, labelClass, primaryBtn, selectClass, textareaCla
 const SERVICES = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanout', 'Dog walking', 'Odd job'];
 
 export default function RequestPage() {
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     service: '',
     name: '',
@@ -24,11 +26,26 @@ export default function RequestPage() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  // Saving a request now crosses the network, so "sent" has to mean the
+  // database actually has it. Showing the thank-you first and hoping would
+  // leave a neighbour expecting a butler who is never coming.
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!e.currentTarget.reportValidity()) return;
-    addJob(form);
-    setSubmitted(true);
+    setSubmitting(true);
+    setError('');
+    try {
+      const job = await addJob(form);
+      setSubmittedJobId(job.id);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : 'We could not send that request. Check your connection and try again.',
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -48,7 +65,7 @@ export default function RequestPage() {
           </a>
         </Animate>
 
-        {submitted ? (
+        {submittedJobId ? (
           <Animate delay={0} direction="up">
             <div className="rounded-[16px] border border-black/10 bg-white p-6 sm:p-8 text-center">
               <h3 className="text-ink text-[18px] font-semibold mb-1">Request sent</h3>
@@ -113,7 +130,14 @@ export default function RequestPage() {
                 <textarea id="details" required placeholder="Tell us more about the job..." className={textareaClass} value={form.details} onChange={(e) => update('details', e.target.value)} />
               </div>
 
-              <button type="submit" className={primaryBtn}>Send request</button>
+              {error && (
+                <div className="rounded-[10px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[13px] px-4 py-3 mb-4">
+                  {error}
+                </div>
+              )}
+              <button type="submit" className={primaryBtn} disabled={submitting}>
+                {submitting ? 'Sending\u2026' : 'Send request'}
+              </button>
               <p className="text-black/45 text-[13px] text-center mt-4">
                 Nothing is charged now — a manager approves your request first.
               </p>

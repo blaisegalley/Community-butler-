@@ -8,6 +8,7 @@ import {
   approveJob,
   assignJob,
   Butler,
+  ButlerStats,
   changeAdminPassword,
   completeJob,
   getActivity,
@@ -16,20 +17,40 @@ import {
   getButlers,
   getButlerStats,
   getJobs,
+  isShared,
   Job,
   JobStatus,
   rejectJob,
 } from '@/lib/store';
+import { useQuery } from '@/lib/useQuery';
 import { inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
 
 export default function AdminPage() {
-  const [session, setSession] = useState(() => getAdminSession());
+  const { data: session, loading, reload } = useQuery(getAdminSession);
 
-  if (!session) {
-    return <AdminLogin onSignedIn={() => setSession(getAdminSession())} />;
-  }
-  return <AdminDashboard email={session.email} onLogout={() => { adminLogout(); setSession(null); }} />;
+  // Reading the session is a round trip now, and flashing the sign-in form
+  // at an admin who is already signed in reads as being logged out.
+  if (loading) return <Centered>Checking your session\u2026</Centered>;
+  if (!session) return <AdminLogin onSignedIn={reload} />;
+
+  return (
+    <AdminDashboard
+      email={session.email}
+      onLogout={async () => {
+        await adminLogout();
+        reload();
+      }}
+    />
+  );
+}
+
+function Centered({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen bg-sand flex items-center justify-center px-5 text-graphite text-[14px]">
+      {children}
+    </div>
+  );
 }
 
 function AdminLogin({ onSignedIn }: { onSignedIn: () => void }) {
@@ -37,12 +58,22 @@ function AdminLogin({ onSignedIn }: { onSignedIn: () => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  const [busy, setBusy] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (adminLogin(email, password)) {
-      onSignedIn();
-    } else {
-      setError("That email/password combo isn't on the admin allowlist.");
+    setBusy(true);
+    setError('');
+    try {
+      if (await adminLogin(email, password)) {
+        onSignedIn();
+      } else {
+        setError("That email and password don't match an admin account.");
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not sign in.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -70,7 +101,9 @@ function AdminLogin({ onSignedIn }: { onSignedIn: () => void }) {
             <label className={labelClass} htmlFor="admin-password">Password</label>
             <input id="admin-password" type="password" required className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <button type="submit" className={primaryBtn}>Sign in</button>
+          <button type="submit" className={primaryBtn} disabled={busy}>
+            {busy ? 'Signing in\u2026' : 'Sign in'}
+          </button>
         </form>
       </div>
     </div>
@@ -111,25 +144,45 @@ function fmtDate(iso: string | null) {
 
 type Tab = 'jobs' | 'butlers' | 'activity' | 'admins';
 
-function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => void }) {
-  const [, forceRender] = useState(0);
-  const [tab, setTab] = useState<Tab>('jobs');
-  const refresh = () => forceRender((n) => n + 1);
+/**
+ * The roster with each Butler's stats attached. One query per Butler is a
+ * lot in principle; in practice this is a neighbourhood with a handful of
+ * them, and it keeps the counting logic in one place instead of a view.
+ */
+async function loadRoster(): Promise<{ butler: Butler; stats: ButlerStats }[]> {
+  const butlers = await getButlers();
+  const withStats = await Promise.all(
+    butlers.map(async (butler) => ({ butler, stats: await getButlerStats(butler.id) })),
+  );
+  return withStats.sort(
+    (a, b) =>
+      b.stats.jobsCompleted - a.stats.jobsCompleted || b.stats.jobsAssigned - a.stats.jobsAssigned,
+  );
+}
 
-  const jobs = getJobs()
+function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => void }) {
+  const [tab, setTab] = useState<Tab>('jobs');
+
+  const jobsQuery = useQuery(getJobs);
+  const butlersQuery = useQuery(getButlers);
+  const activityQuery = useQuery(getActivity);
+  const adminsQuery = useQuery(getAdmins);
+  const rosterQuery = useQuery(loadRoster);
+
+  const loadError =
+    jobsQuery.error ?? butlersQuery.error ?? activityQuery.error ?? adminsQuery.error;
+
+  const jobs = (jobsQuery.data ?? [])
     .slice()
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || +new Date(b.submittedAt) - +new Date(a.submittedAt));
-  const butlers = getButlers();
-  const activity = getActivity();
-  const admins = getAdmins();
+  const butlers = butlersQuery.data ?? [];
+  const activity = activityQuery.data ?? [];
+  const admins = adminsQuery.data ?? [];
+  const butlersByActivity = rosterQuery.data ?? [];
 
   const jobsThisWeek = jobs.filter((j) => sameWeek(j.submittedAt)).length;
   const pending = jobs.filter((j) => j.status === 'New').length;
   const completedThisMonth = jobs.filter((j) => j.status === 'Completed' && sameMonth(j.completedAt)).length;
-
-  const butlersByActivity = butlers
-    .map((b) => ({ butler: b, stats: getButlerStats(b.id) }))
-    .sort((a, b) => b.stats.jobsCompleted - a.stats.jobsCompleted || b.stats.jobsAssigned - a.stats.jobsAssigned);
 
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: 'jobs', label: 'Job requests', count: jobs.length },
@@ -153,6 +206,20 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
             </button>
           </div>
         </div>
+
+        {!isShared && (
+          <div className="rounded-[10px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[13px] px-4 py-3 mb-5">
+            <strong>Demo mode.</strong> No database is connected, so this dashboard only shows
+            requests submitted from <em>this</em> browser — not ones neighbours post from their own
+            phones — and nobody can be notified or emailed. See SETUP.md.
+          </div>
+        )}
+
+        {loadError && (
+          <div className="rounded-[10px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[13px] px-4 py-3 mb-5">
+            {loadError}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-8">
           <StatTile value={jobsThisWeek} label="Jobs this week" />
@@ -180,11 +247,17 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
             {jobs.length ? (
               <div className="flex flex-col gap-2.5">
                 {jobs.map((job) => (
-                  <JobCard key={job.id} job={job} butlers={butlers} onChange={refresh} />
+                  <JobCard key={job.id} job={job} butlers={butlers} />
                 ))}
               </div>
             ) : (
-              <EmptyState text="No job requests yet — submissions from /request will appear here." />
+              <EmptyState
+                text={
+                  jobsQuery.loading
+                    ? 'Loading job requests\u2026'
+                    : 'No job requests yet — submissions from /request will appear here.'
+                }
+              />
             )}
           </section>
         )}
@@ -221,18 +294,19 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
           </section>
         )}
 
-        {tab === 'admins' && <AdminsSection admins={admins} email={email} onChange={refresh} />}
+        {tab === 'admins' && <AdminsSection admins={admins} email={email} />}
       </div>
     </div>
   );
 }
 
-function AdminsSection({ admins, email: myEmail, onChange }: { admins: Admin[]; email: string; onChange: () => void }) {
+function AdminsSection({ admins, email: myEmail }: { admins: Admin[]; email: string }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  function handleAdd(e: FormEvent<HTMLFormElement>) {
+  async function handleAdd(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const normalized = email.trim().toLowerCase();
     if (!normalized || !password) return;
@@ -240,11 +314,17 @@ function AdminsSection({ admins, email: myEmail, onChange }: { admins: Admin[]; 
       setError('That email is already an admin.');
       return;
     }
-    addAdmin(email.trim(), password);
-    setEmail('');
-    setPassword('');
-    setError('');
-    onChange();
+    setBusy(true);
+    try {
+      await addAdmin(email.trim(), password);
+      setEmail('');
+      setPassword('');
+      setError('');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not add that admin.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -267,8 +347,8 @@ function AdminsSection({ admins, email: myEmail, onChange }: { admins: Admin[]; 
             <label className={labelClass} htmlFor="new-admin-password">Password</label>
             <input id="new-admin-password" type="password" required className={inputClass} value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <button type="submit" className="h-[42px] px-5 rounded-[10px] bg-ink text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity whitespace-nowrap">
-            Add admin
+          <button type="submit" disabled={busy} className="h-[42px] px-5 rounded-[10px] bg-ink text-white text-[13.5px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40 whitespace-nowrap">
+            {busy ? 'Adding\u2026' : 'Add admin'}
           </button>
         </form>
       </div>
@@ -293,14 +373,21 @@ function ChangePasswordCard({ email }: { email: string }) {
   const [next, setNext] = useState('');
   const [status, setStatus] = useState<{ kind: 'error' | 'success'; text: string } | null>(null);
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (changeAdminPassword(email, current, next)) {
-      setStatus({ kind: 'success', text: 'Password updated.' });
-      setCurrent('');
-      setNext('');
-    } else {
-      setStatus({ kind: 'error', text: 'Current password is incorrect.' });
+    try {
+      if (await changeAdminPassword(email, current, next)) {
+        setStatus({ kind: 'success', text: 'Password updated.' });
+        setCurrent('');
+        setNext('');
+      } else {
+        setStatus({ kind: 'error', text: 'Current password is incorrect.' });
+      }
+    } catch (cause) {
+      setStatus({
+        kind: 'error',
+        text: cause instanceof Error ? cause.message : 'Could not update your password.',
+      });
     }
   }
 
@@ -352,33 +439,46 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
-function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onChange: () => void }) {
+function JobCard({ job, butlers }: { job: Job; butlers: Butler[] }) {
   const [selectedButler, setSelectedButler] = useState(butlers[0]?.id ?? '');
+  const [busy, setBusy] = useState(false);
   const assignedButler = butlers.find((b) => b.id === job.assignedButlerId);
 
-  function handleApprove() {
-    approveJob(job.id);
-    onChange();
-  }
-  function handleReject() {
-    const note = window.prompt('Reason for rejecting this request (optional):', '');
-    if (note !== null) {
-      rejectJob(job.id, note);
-      onChange();
+  // Every action is a write the admin needs to know actually landed —
+  // approving a job is what releases it to butlers and fires their alerts.
+  async function run(action: () => Promise<unknown>) {
+    setBusy(true);
+    try {
+      await action();
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : 'That did not work. Try again.');
+    } finally {
+      setBusy(false);
     }
   }
+
+  const handleApprove = () => run(() => approveJob(job.id));
+
+  function handleReject() {
+    const note = window.prompt('Reason for rejecting this request (optional):', '');
+    if (note !== null) void run(() => rejectJob(job.id, note));
+  }
+
   function handleAssign() {
     if (!selectedButler) {
       window.alert('Pick a Butler to assign first.');
       return;
     }
-    assignJob(job.id, selectedButler, `You've been assigned a new job: ${job.service}. Check the admin for details.`);
-    onChange();
+    void run(() =>
+      assignJob(
+        job.id,
+        selectedButler,
+        `You've been assigned a new job: ${job.service}. Check the admin for details.`,
+      ),
+    );
   }
-  function handleComplete(rating: number) {
-    completeJob(job.id, rating);
-    onChange();
-  }
+
+  const handleComplete = (rating: number) => run(() => completeJob(job.id, rating));
 
   return (
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4">
@@ -416,8 +516,8 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
 
       {job.status === 'New' && (
         <div className="flex gap-2 mt-3">
-          <button onClick={handleApprove} className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity">Approve</button>
-          <button onClick={handleReject} className="h-[32px] px-3.5 rounded-[8px] border border-black/15 text-ink text-[12.5px] font-medium hover:bg-black/5 transition-colors">Reject</button>
+          <button onClick={handleApprove} disabled={busy} className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40">Approve</button>
+          <button onClick={handleReject} disabled={busy} className="h-[32px] px-3.5 rounded-[8px] border border-black/15 text-ink text-[12.5px] font-medium hover:bg-black/5 transition-colors disabled:opacity-40">Reject</button>
         </div>
       )}
       {job.status === 'Approved' && (
@@ -429,7 +529,7 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
           >
             {butlers.length ? butlers.map((b) => <option key={b.id} value={b.id}>{b.name}</option>) : <option value="">No Butlers signed up yet</option>}
           </select>
-          <button onClick={handleAssign} disabled={!butlers.length} className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40">
+          <button onClick={handleAssign} disabled={busy || !butlers.length} className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40">
             Assign
           </button>
         </div>
@@ -442,8 +542,9 @@ function JobCard({ job, butlers, onChange }: { job: Job; butlers: Butler[]; onCh
               <button
                 key={n}
                 onClick={() => handleComplete(n)}
+                disabled={busy}
                 title={`Complete and rate ${n} star${n > 1 ? 's' : ''}`}
-                className="h-[32px] px-2.5 rounded-[8px] border border-black/15 text-[12.5px] font-medium text-ink hover:bg-black/5 transition-colors"
+                className="h-[32px] px-2.5 rounded-[8px] border border-black/15 text-[12.5px] font-medium text-ink hover:bg-black/5 transition-colors disabled:opacity-40"
               >
                 {n}★
               </button>
@@ -464,7 +565,7 @@ function StarRow({ rating }: { rating: number | null }) {
   );
 }
 
-function ButlerCard({ butler, stats }: { butler: Butler; stats: ReturnType<typeof getButlerStats> }) {
+function ButlerCard({ butler, stats }: { butler: Butler; stats: ButlerStats }) {
   const unread = (butler.notifications || []).length;
   return (
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4 flex items-start justify-between gap-3 flex-wrap">

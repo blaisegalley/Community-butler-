@@ -5,16 +5,16 @@ import SiteFooter from '@/components/SiteFooter';
 import {
   acceptJob,
   addButler,
-  adminLogin,
   Butler,
-  butlerLoginByContact,
-  butlerLoginById,
   butlerLogout,
   getAvailableJobsForButler,
   getCurrentButler,
   getMyJobsForButler,
+  isShared,
   Job,
+  signIn,
 } from '@/lib/store';
+import { useQuery } from '@/lib/useQuery';
 import { fieldWrap, inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
 
@@ -28,17 +28,37 @@ function initialMode(): Mode {
 }
 
 export default function AuthPage() {
-  const [butler, setButler] = useState<Butler | null>(() => getCurrentButler());
+  const { data: butler, loading, reload } = useQuery(getCurrentButler);
+
+  // Restoring a session is a round trip. Showing the sign-up form first
+  // and then swapping it for the dashboard makes a signed-in Butler think
+  // they were logged out.
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-sand flex items-center justify-center px-5 text-graphite text-[14px]">
+        Loading your account&hellip;
+      </div>
+    );
+  }
 
   if (butler) {
-    return <ButlerDashboard butler={butler} onLogout={() => { butlerLogout(); setButler(null); }} />;
+    return (
+      <ButlerDashboard
+        butler={butler}
+        onLogout={async () => {
+          await butlerLogout();
+          reload();
+        }}
+      />
+    );
   }
-  return <GuestAuth onAuthed={(b) => setButler(b)} />;
+  return <GuestAuth onAuthed={reload} />;
 }
 
-function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
+function GuestAuth({ onAuthed }: { onAuthed: () => void }) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
   const [signup, setSignup] = useState({ name: '', contact: '', area: '', password: '' });
   const [prefs, setPrefs] = useState<string[]>([]);
   const [signin, setSignin] = useState({ contact: '', password: '' });
@@ -47,28 +67,48 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
     setPrefs((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError('');
     if (!e.currentTarget.reportValidity()) return;
 
-    if (mode === 'signup') {
-      const created = addButler({ name: signup.name, contact: signup.contact, serviceArea: signup.area, jobTypePrefs: prefs });
-      butlerLoginById(created.id);
-      onAuthed(created);
-    } else {
-      if (adminLogin(signin.contact, signin.password)) {
+    setBusy(true);
+    try {
+      if (mode === 'signup') {
+        await addButler(
+          {
+            name: signup.name,
+            contact: signup.contact,
+            serviceArea: signup.area,
+            jobTypePrefs: prefs,
+          },
+          signup.password,
+        );
+        onAuthed();
+        return;
+      }
+
+      // One call for both roles: the hosted backend has a single identity
+      // system, so trying an admin sign-in and then a Butler one would
+      // leave a stray session behind whenever the first attempt worked.
+      const result = await signIn(signin.contact, signin.password);
+      if (result.kind === 'admin') {
         window.location.href = withBase('admin/');
         return;
       }
-      const found = butlerLoginByContact(signin.contact);
-      if (found) {
-        onAuthed(found);
-      } else {
-        setError(
-          "We couldn't find a Butler account with that phone/email on this device. Since there's no backend yet, accounts only exist on the device/browser they signed up on — sign up if this is your first time here.",
-        );
+      if (result.kind === 'butler') {
+        onAuthed();
+        return;
       }
+      setError(
+        isShared
+          ? "That email and password don't match an account. If this is your first time, sign up instead."
+          : "We couldn't find a Butler account with that phone/email on this device. Without a database, accounts only exist in the browser they signed up in — sign up if this is your first time here.",
+      );
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Something went wrong. Try again.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -118,8 +158,8 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
                   <input id="su-name" required className={inputClass} value={signup.name} onChange={(e) => setSignup((s) => ({ ...s, name: e.target.value }))} />
                 </div>
                 <div className={fieldWrap}>
-                  <label className={labelClass} htmlFor="su-contact">Phone or email</label>
-                  <input id="su-contact" required className={inputClass} value={signup.contact} onChange={(e) => setSignup((s) => ({ ...s, contact: e.target.value }))} />
+                  <label className={labelClass} htmlFor="su-contact">{isShared ? 'Email' : 'Phone or email'}</label>
+                  <input id="su-contact" required type={isShared ? 'email' : 'text'} autoComplete="username" className={inputClass} value={signup.contact} onChange={(e) => setSignup((s) => ({ ...s, contact: e.target.value }))} />
                 </div>
                 <div className={fieldWrap}>
                   <label className={labelClass} htmlFor="su-area">Service area</label>
@@ -144,8 +184,8 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
             ) : (
               <>
                 <div className={fieldWrap}>
-                  <label className={labelClass} htmlFor="si-contact">Phone or email</label>
-                  <input id="si-contact" required className={inputClass} value={signin.contact} onChange={(e) => setSignin((s) => ({ ...s, contact: e.target.value }))} />
+                  <label className={labelClass} htmlFor="si-contact">{isShared ? 'Email' : 'Phone or email'}</label>
+                  <input id="si-contact" required type={isShared ? 'email' : 'text'} autoComplete="username" className={inputClass} value={signin.contact} onChange={(e) => setSignin((s) => ({ ...s, contact: e.target.value }))} />
                 </div>
                 <div className={fieldWrap}>
                   <label className={labelClass} htmlFor="si-password">Password</label>
@@ -154,8 +194,14 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
               </>
             )}
 
-            <button type="submit" className={primaryBtn}>
-              {mode === 'signup' ? 'Create account' : 'Sign in'}
+            <button type="submit" className={primaryBtn} disabled={busy}>
+              {busy
+                ? mode === 'signup'
+                  ? 'Creating account\u2026'
+                  : 'Signing in\u2026'
+                : mode === 'signup'
+                  ? 'Create account'
+                  : 'Sign in'}
             </button>
           </form>
         </Animate>
@@ -166,16 +212,20 @@ function GuestAuth({ onAuthed }: { onAuthed: (b: Butler) => void }) {
 }
 
 function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () => void }) {
-  const [, forceRender] = useState(0);
-  const refresh = () => forceRender((n) => n + 1);
+  const availableQuery = useQuery(() => getAvailableJobsForButler(butler.id), [butler.id]);
+  const mineQuery = useQuery(() => getMyJobsForButler(butler.id), [butler.id]);
 
-  const available = getAvailableJobsForButler(butler.id);
-  const mine = getMyJobsForButler(butler.id);
+  const available = availableQuery.data ?? [];
+  const mine = mineQuery.data ?? [];
+  const loadError = availableQuery.error ?? mineQuery.error;
 
-  function handleAccept(jobId: string) {
-    const ok = acceptJob(jobId, butler.id);
-    if (!ok) window.alert('Sorry — that job was just taken.');
-    refresh();
+  async function handleAccept(jobId: string) {
+    try {
+      const ok = await acceptJob(jobId, butler.id);
+      if (!ok) window.alert('Sorry — that job was just taken.');
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : 'Could not accept that job.');
+    }
   }
 
   return (
@@ -194,6 +244,12 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
           </button>
         </div>
 
+        {loadError && (
+          <div className="rounded-[10px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[13px] px-4 py-3 mb-5">
+            {loadError}
+          </div>
+        )}
+
         <section className="mb-10">
           <h2 className="text-[15px] font-semibold text-ink mb-3">
             Available jobs {available.length ? <span className="font-normal text-black/40">({available.length})</span> : null}
@@ -202,14 +258,20 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
             <div className="flex flex-col gap-2.5">
               {available.map((job) => (
                 <JobTile key={job.id} job={job} matched={butler.jobTypePrefs.includes(job.service)} action={
-                  <button onClick={() => handleAccept(job.id)} className="h-[34px] px-4 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity mt-3">
+                  <button onClick={() => void handleAccept(job.id)} className="h-[34px] px-4 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity mt-3">
                     Accept job
                   </button>
                 } />
               ))}
             </div>
           ) : (
-            <EmptyState text="No open jobs right now — check back soon." />
+            <EmptyState
+              text={
+                availableQuery.loading
+                  ? 'Looking for open jobs\u2026'
+                  : 'No open jobs right now — check back soon.'
+              }
+            />
           )}
         </section>
 

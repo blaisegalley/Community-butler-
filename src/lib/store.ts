@@ -1,407 +1,193 @@
 /*
- * Community Butler — client-side data layer.
+ * Community Butler — the app's data layer.
  *
- * IMPORTANT: this project is a static site with no backend yet, so this
- * store persists to localStorage in the current browser only. It is a
- * working MVP, not production infrastructure:
- *   - Data does not sync across devices/browsers.
- *   - Admin "auth" below is a fixed allowlist checked in the browser —
- *     fine for keeping casual visitors out, but anyone who reads this
- *     file's source can see the checking logic. Do not reuse these
- *     passwords anywhere real, and swap in real backend auth (and a
- *     real database) before this becomes a real operational tool.
+ * Everything the UI does to data goes through here. Under it sits one of
+ * two backends:
+ *
+ *   remote — a Supabase project. Jobs, butlers and admins are shared, so
+ *            the admin dashboard sees what neighbours post from their own
+ *            phones, and the notification jobs have something to read.
+ *   local  — this browser's localStorage. No sharing, and therefore no
+ *            notifications or emails. Used when no project is configured,
+ *            so the site still works and local development needs no keys.
+ *
+ * Which one is in use is decided once, by whether the Supabase environment
+ * variables were present at build time.
+ *
+ * Every function is async. Callers should render a loading state rather
+ * than assume data is already there — useQuery below does that for them.
  */
 
-export type JobStatus = 'New' | 'Approved' | 'Assigned' | 'Completed' | 'Rejected';
+import { isBackendConfigured } from '@/lib/backendConfig';
+import { local } from './backend/local';
+import type { Backend } from './backend/types';
 
-export interface Job {
-  id: string;
-  service: string;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  date: string;
-  budget: string;
-  details: string;
-  submittedAt: string;
-  status: JobStatus;
-  rejectNote: string;
-  assignedButlerId: string | null;
-  assignedAt: string | null;
-  completedAt: string | null;
-  acceptedBySelf?: boolean;
-  /** 1-5 admin-given rating of the Butler's performance on this job. */
-  rating?: number;
-}
-
-export type NewJobInput = Pick<
+import type {
+  ActivityEntry,
+  Admin,
+  AdminSession,
+  Butler,
+  ButlerStats,
   Job,
-  'service' | 'name' | 'phone' | 'email' | 'address' | 'date' | 'budget' | 'details'
->;
+  NewButlerInput,
+  NewJobInput,
+  SignInResult,
+} from './backend/types';
 
-export interface ButlerNotification {
-  message: string;
-  at: string;
-  read: boolean;
-}
+export type {
+  ActivityEntry,
+  Admin,
+  AdminSession,
+  Butler,
+  ButlerNotification,
+  ButlerStats,
+  Job,
+  JobStatus,
+  NewButlerInput,
+  NewJobInput,
+  SignInResult,
+} from './backend/types';
 
-export interface Butler {
-  id: string;
-  name: string;
-  contact: string;
-  serviceArea: string;
-  jobTypePrefs: string[];
-  signedUpAt: string;
-  notifications: ButlerNotification[];
-}
+/** True when data is shared across devices — and so when alerts can work. */
+export const isShared = isBackendConfigured();
 
-export type NewButlerInput = Pick<Butler, 'name' | 'contact' | 'serviceArea' | 'jobTypePrefs'>;
+/*
+ * The Supabase client is ~230KB of JavaScript that the homepage never
+ * needs: a visitor reading the page touches no data until they open a
+ * form, and in local mode the client is never used at all. Importing it
+ * dynamically keeps it out of the main bundle and off the critical path.
+ */
+let remoteBackend: Promise<Backend> | null = null;
 
-export interface ButlerStats {
-  jobsAssigned: number;
-  jobsCompleted: number;
-  avgRating: number | null;
-  ratedJobs: number;
-}
-
-export interface Admin {
-  id: string;
-  email: string;
-  password: string;
-  addedAt: string;
-}
-
-export interface ActivityEntry {
-  id: string;
-  message: string;
-  at: string;
-}
-
-interface AdminSession {
-  email: string;
-  expiresAt: number;
-}
-
-interface ButlerSession {
-  butlerId: string;
-  expiresAt: number;
-}
-
-const KEYS = {
-  jobs: 'cb.jobs.v1',
-  butlers: 'cb.butlers.v1',
-  session: 'cb.adminSession.v1',
-  butlerSession: 'cb.butlerSession.v1',
-  admins: 'cb.admins.v1',
-  activity: 'cb.activity.v1',
-} as const;
-
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-const ACTIVITY_LIMIT = 200;
-
-function uid(): string {
-  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
-}
-
-function read<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
+function backend(): Backend | Promise<Backend> {
+  if (!isShared) return local;
+  if (!remoteBackend) {
+    remoteBackend = import('./backend/remote').then((module) => module.remote);
   }
+  return remoteBackend;
 }
 
-function write<T>(key: string, value: T): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* storage unavailable (private mode, quota) — fail silently */
-  }
+// ---------- change notification ----------
+//
+// A mutation anywhere should refresh every view that reads the same data,
+// without those views having to know about each other.
+
+const listeners = new Set<() => void>();
+
+export function onStoreChange(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }
 
-// ---------- activity log ----------
-// A running feed of admin-relevant events, newest first, capped so
-// localStorage doesn't grow without bound.
-
-export function getActivity(): ActivityEntry[] {
-  return read<ActivityEntry[]>(KEYS.activity, []);
+function emitChange(): void {
+  listeners.forEach((listener) => listener());
 }
 
-export function logActivity(message: string): void {
-  const entries = getActivity();
-  entries.unshift({ id: uid(), message, at: new Date().toISOString() });
-  write(KEYS.activity, entries.slice(0, ACTIVITY_LIMIT));
-}
+// ---------- reads ----------
+//
+// Each of these is a one-line pass-through with its type written out.
+// A clever generic forwarder loses the return types, and a dashboard that
+// silently types its job list as `any` is worse than a little repetition.
 
-// ---------- jobs ----------
+export const getActivity = async (): Promise<ActivityEntry[]> => (await backend()).getActivity();
+export const getJobs = async (): Promise<Job[]> => (await backend()).getJobs();
+export const getButlers = async (): Promise<Butler[]> => (await backend()).getButlers();
+export const getAdmins = async (): Promise<Admin[]> => (await backend()).getAdmins();
 
-export function getJobs(): Job[] {
-  return read<Job[]>(KEYS.jobs, []);
-}
+export const getButlerStats = async (butlerId: string): Promise<ButlerStats> =>
+  (await backend()).getButlerStats(butlerId);
+export const getAvailableJobsForButler = async (butlerId: string): Promise<Job[]> =>
+  (await backend()).getAvailableJobsForButler(butlerId);
+export const getMyJobsForButler = async (butlerId: string): Promise<Job[]> =>
+  (await backend()).getMyJobsForButler(butlerId);
 
-export function addJob(data: NewJobInput): Job {
-  const jobs = getJobs();
-  const job: Job = {
-    id: uid(),
-    submittedAt: new Date().toISOString(),
-    status: 'New',
-    rejectNote: '',
-    assignedButlerId: null,
-    assignedAt: null,
-    completedAt: null,
-    ...data,
-  };
-  jobs.unshift(job);
-  write(KEYS.jobs, jobs);
-  logActivity(`New job request: ${job.service || 'Job'} from ${job.name || 'a neighbor'}`);
+export const getAdminSession = async (): Promise<AdminSession | null> =>
+  (await backend()).getAdminSession();
+export const getCurrentButler = async (): Promise<Butler | null> =>
+  (await backend()).getCurrentButler();
+
+// ---------- writes ----------
+//
+// Each one tells every subscriber to refetch, so a change made in one
+// place shows up everywhere that reads the same data.
+
+export async function addJob(data: NewJobInput): Promise<Job> {
+  const job = await (await backend()).addJob(data);
+  emitChange();
   return job;
 }
 
-export function updateJob(id: string, patch: Partial<Job>): Job[] {
-  const jobs = getJobs();
-  const idx = jobs.findIndex((j) => j.id === id);
-  if (idx > -1) {
-    jobs[idx] = { ...jobs[idx], ...patch };
-    write(KEYS.jobs, jobs);
-  }
-  return jobs;
+export async function approveJob(id: string): Promise<void> {
+  await (await backend()).approveJob(id);
+  emitChange();
 }
 
-export function approveJob(id: string): Job[] {
-  const jobs = updateJob(id, { status: 'Approved' });
-  const job = jobs.find((j) => j.id === id);
-  if (job) logActivity(`Approved job: ${job.service || 'Job'} for ${job.name}`);
-  return jobs;
+export async function rejectJob(id: string, note: string): Promise<void> {
+  await (await backend()).rejectJob(id, note);
+  emitChange();
 }
 
-export function rejectJob(id: string, note: string): Job[] {
-  const jobs = updateJob(id, { status: 'Rejected', rejectNote: note || '' });
-  const job = jobs.find((j) => j.id === id);
-  if (job) logActivity(`Rejected job: ${job.service || 'Job'} for ${job.name}`);
-  return jobs;
+export async function completeJob(id: string, rating?: number): Promise<void> {
+  await (await backend()).completeJob(id, rating);
+  emitChange();
 }
 
-export function completeJob(id: string, rating?: number): Job[] {
-  const patch: Partial<Job> = { status: 'Completed', completedAt: new Date().toISOString() };
-  if (rating) patch.rating = Math.min(5, Math.max(1, Math.round(rating)));
-  const jobs = updateJob(id, patch);
-  const job = jobs.find((j) => j.id === id);
-  const butler = job?.assignedButlerId ? getButlers().find((b) => b.id === job.assignedButlerId) : null;
-  if (job) {
-    logActivity(
-      `Completed job: ${job.service || 'Job'}${butler ? ` by ${butler.name}` : ''}${
-        patch.rating ? ` — rated ${patch.rating}★` : ''
-      }`,
-    );
-  }
-  return jobs;
+export async function assignJob(
+  id: string,
+  butlerId: string,
+  notifyMessage?: string,
+): Promise<void> {
+  await (await backend()).assignJob(id, butlerId, notifyMessage);
+  emitChange();
 }
 
-export function assignJob(id: string, butlerId: string, notifyMessage?: string): Job[] {
-  const jobs = updateJob(id, {
-    status: 'Assigned',
-    assignedButlerId: butlerId,
-    assignedAt: new Date().toISOString(),
-  });
-  if (butlerId && notifyMessage) {
-    notifyButler(butlerId, notifyMessage);
-  }
-  const job = jobs.find((j) => j.id === id);
-  const butler = getButlers().find((b) => b.id === butlerId);
-  if (job && butler) logActivity(`Assigned ${job.service || 'job'} to ${butler.name}`);
-  return jobs;
+export async function acceptJob(id: string, butlerId: string): Promise<boolean> {
+  const claimed = await (await backend()).acceptJob(id, butlerId);
+  emitChange();
+  return claimed;
 }
 
-// A Butler claiming an open job themselves — same end state as assignJob,
-// but guards against the job having been taken (by admin or another
-// Butler/tab) in the moment between rendering the list and clicking.
-export function acceptJob(id: string, butlerId: string): boolean {
-  const job = getJobs().find((j) => j.id === id);
-  if (!job || job.status !== 'Approved' || job.assignedButlerId) {
-    return false;
-  }
-  updateJob(id, {
-    status: 'Assigned',
-    assignedButlerId: butlerId,
-    assignedAt: new Date().toISOString(),
-    acceptedBySelf: true,
-  });
-  const butler = getButlers().find((b) => b.id === butlerId);
-  if (butler) logActivity(`${butler.name} accepted ${job.service || 'a job'}`);
-  return true;
-}
-
-// Open jobs a Butler can take: admin-approved, not yet claimed by anyone.
-// Jobs matching the Butler's own service area or job-type prefs sort first.
-export function getAvailableJobsForButler(butlerId: string): Job[] {
-  const butler = getButlers().find((b) => b.id === butlerId);
-  const prefs = butler?.jobTypePrefs ?? [];
-  const area = (butler?.serviceArea ?? '').trim().toLowerCase();
-
-  const score = (j: Job) =>
-    (prefs.includes(j.service) ? 2 : 0) + (area && j.address.toLowerCase().includes(area) ? 1 : 0);
-
-  return getJobs()
-    .filter((j) => j.status === 'Approved' && !j.assignedButlerId)
-    .sort((a, b) => score(b) - score(a) || +new Date(b.submittedAt) - +new Date(a.submittedAt));
-}
-
-export function getMyJobsForButler(butlerId: string): Job[] {
-  return getJobs()
-    .filter((j) => j.assignedButlerId === butlerId)
-    .sort(
-      (a, b) =>
-        +new Date(b.assignedAt || b.submittedAt) - +new Date(a.assignedAt || a.submittedAt),
-    );
-}
-
-// ---------- butlers ----------
-
-export function getButlers(): Butler[] {
-  return read<Butler[]>(KEYS.butlers, []);
-}
-
-export function addButler(data: NewButlerInput): Butler {
-  const butlers = getButlers();
-  const butler: Butler = {
-    id: uid(),
-    signedUpAt: new Date().toISOString(),
-    notifications: [],
-    ...data,
-  };
-  butlers.unshift(butler);
-  write(KEYS.butlers, butlers);
-  logActivity(`${butler.name} signed up as a Butler`);
+export async function addButler(data: NewButlerInput, password: string): Promise<Butler> {
+  const butler = await (await backend()).addButler(data, password);
+  emitChange();
   return butler;
 }
 
-export function notifyButler(id: string, message: string): void {
-  const butlers = getButlers();
-  const idx = butlers.findIndex((b) => b.id === id);
-  if (idx > -1) {
-    butlers[idx].notifications = butlers[idx].notifications || [];
-    butlers[idx].notifications.unshift({ message, at: new Date().toISOString(), read: false });
-    write(KEYS.butlers, butlers);
-  }
+export async function addAdmin(email: string, password: string): Promise<void> {
+  await (await backend()).addAdmin(email, password);
+  emitChange();
 }
 
-// Admin-only view of how active/well-rated a Butler is. Never surfaced to
-// the Butler themselves — only used from the admin dashboard.
-export function getButlerStats(butlerId: string): ButlerStats {
-  const jobs = getJobs().filter((j) => j.assignedButlerId === butlerId);
-  const completed = jobs.filter((j) => j.status === 'Completed');
-  const rated = completed.filter((j) => typeof j.rating === 'number');
-  const avgRating = rated.length
-    ? rated.reduce((sum, j) => sum + (j.rating ?? 0), 0) / rated.length
-    : null;
-  return {
-    jobsAssigned: jobs.length,
-    jobsCompleted: completed.length,
-    avgRating,
-    ratedJobs: rated.length,
-  };
+export async function changeAdminPassword(
+  email: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<boolean> {
+  const changed = await (await backend()).changeAdminPassword(email, currentPassword, newPassword);
+  emitChange();
+  return changed;
 }
 
-// ---------- admins ----------
-// Dynamic allowlist so the team can add new admins from the dashboard
-// instead of editing source. Seeded once with the real owner account.
+// ---------- sessions ----------
 
-function seedAdmins(): Admin[] {
-  const seeded: Admin[] = [
-    { id: uid(), email: 'pbgalley@icloud.com', password: '44Brinker', addedAt: new Date().toISOString() },
-  ];
-  write(KEYS.admins, seeded);
-  return seeded;
+export async function adminLogin(email: string, password: string): Promise<boolean> {
+  const ok = await (await backend()).adminLogin(email, password);
+  emitChange();
+  return ok;
 }
 
-export function getAdmins(): Admin[] {
-  const admins = read<Admin[] | null>(KEYS.admins, null);
-  return admins && admins.length ? admins : seedAdmins();
+export async function adminLogout(): Promise<void> {
+  await (await backend()).adminLogout();
+  emitChange();
 }
 
-export function addAdmin(email: string, password: string): Admin {
-  const admins = getAdmins();
-  const admin: Admin = { id: uid(), email: email.trim(), password, addedAt: new Date().toISOString() };
-  admins.push(admin);
-  write(KEYS.admins, admins);
-  logActivity(`Added admin: ${admin.email}`);
-  return admin;
+export async function signIn(contact: string, password: string): Promise<SignInResult> {
+  const result = await (await backend()).signIn(contact, password);
+  emitChange();
+  return result;
 }
 
-export function changeAdminPassword(email: string, currentPassword: string, newPassword: string): boolean {
-  const admins = getAdmins();
-  const normalized = email.trim().toLowerCase();
-  const admin = admins.find((a) => a.email.toLowerCase() === normalized);
-  if (!admin || admin.password !== currentPassword) return false;
-  admin.password = newPassword;
-  write(KEYS.admins, admins);
-  logActivity(`Updated password: ${admin.email}`);
-  return true;
-}
-
-// ---------- admin session ----------
-
-export function adminLogin(email: string, password: string): boolean {
-  const normalized = (email || '').trim().toLowerCase();
-  const match = getAdmins().find(
-    (a) => a.email.toLowerCase() === normalized && a.password === password,
-  );
-  if (!match) return false;
-  write<AdminSession>(KEYS.session, { email: match.email, expiresAt: Date.now() + SESSION_TTL_MS });
-  return true;
-}
-
-export function getAdminSession(): AdminSession | null {
-  const session = read<AdminSession | null>(KEYS.session, null);
-  return session && session.expiresAt > Date.now() ? session : null;
-}
-
-export function isAdminLoggedIn(): boolean {
-  return !!getAdminSession();
-}
-
-export function adminLogout(): void {
-  try {
-    localStorage.removeItem(KEYS.session);
-  } catch {
-    /* ignore */
-  }
-}
-
-// ---------- Butler session ----------
-// Signing up logs a Butler in immediately (we just created the record).
-// "Signing in" on a device that never signed up won't find anything —
-// there's no backend, so accounts don't sync across devices/browsers.
-
-export function butlerLoginById(id: string): void {
-  write<ButlerSession>(KEYS.butlerSession, { butlerId: id, expiresAt: Date.now() + SESSION_TTL_MS });
-}
-
-export function butlerLoginByContact(contact: string): Butler | null {
-  const normalized = (contact || '').trim().toLowerCase();
-  const match = getButlers().find((b) => b.contact.trim().toLowerCase() === normalized);
-  if (!match) return null;
-  butlerLoginById(match.id);
-  return match;
-}
-
-export function getButlerSession(): ButlerSession | null {
-  const session = read<ButlerSession | null>(KEYS.butlerSession, null);
-  return session && session.expiresAt > Date.now() ? session : null;
-}
-
-export function getCurrentButler(): Butler | null {
-  const session = getButlerSession();
-  if (!session) return null;
-  return getButlers().find((b) => b.id === session.butlerId) ?? null;
-}
-
-export function butlerLogout(): void {
-  try {
-    localStorage.removeItem(KEYS.butlerSession);
-  } catch {
-    /* ignore */
-  }
+export async function butlerLogout(): Promise<void> {
+  await (await backend()).butlerLogout();
+  emitChange();
 }
