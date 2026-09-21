@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
+import pwa from './plugins/pwa';
 
 export default defineConfig({
   base: '/Community-butler-/',
-  plugins: [react()],
+  plugins: [react(), pwa()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

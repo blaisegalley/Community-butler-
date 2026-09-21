@@ -2,6 +2,7 @@ import ClosingCTA from '@/components/ClosingCTA';
 import FAQ from '@/components/FAQ';
 import Hero from '@/components/Hero';
 import HowItWorks from '@/components/HowItWorks';
+import InstallPrompt from '@/components/InstallPrompt';
 import JobsDone from '@/components/JobsDone';
 import SiteFooter from '@/components/SiteFooter';
 import Story from '@/components/Story';
@@ -16,6 +17,7 @@ function App() {
       <FAQ />
       <ClosingCTA />
       <SiteFooter />
+      <InstallPrompt />
     </>
   );
 }
