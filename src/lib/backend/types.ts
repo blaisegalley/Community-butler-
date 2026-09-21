@@ -86,8 +86,18 @@ export type SignInResult =
  * project that starts on localStorage and later gets a real database does
  * not need its components rewritten a second time.
  */
+export interface StoredPushSubscription {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+export type PushTarget = { butlerId: string } | { jobId: string };
+
 export interface Backend {
   readonly kind: 'local' | 'remote';
+
+  savePushSubscription(target: PushTarget, subscription: StoredPushSubscription): Promise<void>;
 
   getActivity(): Promise<ActivityEntry[]>;
 

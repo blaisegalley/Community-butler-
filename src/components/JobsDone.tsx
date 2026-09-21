@@ -1,6 +1,7 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import Animate from '@/components/Animate';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
+import NotifyButton from '@/components/NotifyButton';
 import { addJob } from '@/lib/store';
 
 interface ServiceCard {
@@ -430,6 +431,14 @@ export default function JobsDone() {
                     <p className="text-[#4A4A4E] text-[15px] leading-[1.6]">
                       Thanks — a manager will follow up shortly. Nothing has been charged.
                     </p>
+                    <div className="mt-6 pt-6 border-t border-black/10 flex flex-col items-center">
+                      <NotifyButton
+                        target={{ jobId: sentJobId }}
+                        label="Notify me about this job"
+                        onLabel="You'll be notified about this job."
+                        hint="We'll let you know when a Butler is confirmed, and again the day before."
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => setActive(null)}

@@ -7,3 +7,4 @@ dist-ssr
 # Python bytecode caches (regenerated on every run)
 __pycache__/
 *.pyc
+.env.local

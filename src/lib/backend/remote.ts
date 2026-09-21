@@ -24,7 +24,9 @@ import type {
   JobStatus,
   NewButlerInput,
   NewJobInput,
+  PushTarget,
   SignInResult,
+  StoredPushSubscription,
 } from './types';
 
 interface JobRow {
@@ -133,8 +135,49 @@ async function statusOnly(id: string, patch: Record<string, unknown>, context: s
   if (error) fail(context, error);
 }
 
+/**
+ * Asks an edge function to do something this browser must not: send mail,
+ * or push to every butler's device. Failures are logged, not thrown — the
+ * database change that triggered the call already succeeded, and undoing
+ * an approval because an email server was slow would be worse than a
+ * missing notification.
+ */
+async function notify(fn: 'notify-butlers' | 'job-confirmed', jobId: string): Promise<void> {
+  const { error } = await supabase().functions.invoke(fn, { body: { jobId } });
+  if (error) console.warn(`${fn} failed:`, error.message);
+}
+
 export const remote: Backend = {
   kind: 'remote',
+
+  async savePushSubscription(target: PushTarget, subscription: StoredPushSubscription) {
+    const db = supabase();
+
+    if ('butlerId' in target) {
+      const { error } = await db.from('push_subscriptions').upsert(
+        {
+          butler_id: target.butlerId,
+          job_id: null,
+          endpoint: subscription.endpoint,
+          p256dh: subscription.p256dh,
+          auth: subscription.auth,
+        },
+        { onConflict: 'endpoint' },
+      );
+      if (error) fail('Could not turn on notifications', error);
+      return;
+    }
+
+    // Neighbours have no account, so this goes through a function that
+    // takes the job id they were just handed and nothing else.
+    const { error } = await db.rpc('subscribe_to_job', {
+      p_job_id: target.jobId,
+      p_endpoint: subscription.endpoint,
+      p_p256dh: subscription.p256dh,
+      p_auth: subscription.auth,
+    });
+    if (error) fail('Could not turn on notifications', error);
+  },
 
   async getActivity(): Promise<ActivityEntry[]> {
     const { data, error } = await supabase()
@@ -183,8 +226,11 @@ export const remote: Backend = {
     };
   },
 
+  // Approving is what makes a job claimable, so it is also the moment to
+  // tell butlers it exists.
   async approveJob(id: string) {
     await statusOnly(id, { status: 'Approved' }, 'Could not approve that job');
+    await notify('notify-butlers', id);
   },
 
   async rejectJob(id: string, note: string) {
@@ -220,12 +266,20 @@ export const remote: Backend = {
       // worth failing the action the admin actually took.
       if (error) console.warn('Could not record Butler notification:', error.message);
     }
+
+    // Someone is now actually coming, which is what the neighbour has
+    // been waiting to hear.
+    await notify('job-confirmed', id);
   },
 
   // The race is settled in the database — see accept_job() in schema.sql.
   async acceptJob(id: string): Promise<boolean> {
     const { data, error } = await supabase().rpc('accept_job', { p_job_id: id });
     if (error) fail('Could not accept that job', error);
+    // A butler claiming a job confirms it just as much as an admin
+    // assigning one does. The function is idempotent, so the neighbour
+    // hears once either way.
+    if (data === true) await notify('job-confirmed', id);
     return data === true;
   },
 

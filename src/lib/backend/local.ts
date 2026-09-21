@@ -162,6 +162,13 @@ function currentButlerId(): string | null {
 export const local: Backend = {
   kind: 'local',
 
+  // There is no server to send a push from, so recording where to send
+  // one would be theatre. push.ts never gets this far — it reports
+  // 'no-backend' first — but the method has to exist.
+  async savePushSubscription() {
+    throw new Error('Notifications need the shared database to be connected first.');
+  },
+
   async getActivity() {
     return activity();
   },

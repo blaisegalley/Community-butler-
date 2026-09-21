@@ -3,6 +3,7 @@ import Animate from '@/components/Animate';
 import SiteHeader from '@/components/SiteHeader';
 import SiteFooter from '@/components/SiteFooter';
 import { addJob } from '@/lib/store';
+import NotifyButton from '@/components/NotifyButton';
 import { fieldWrap, inputClass, labelClass, primaryBtn, selectClass, textareaClass } from '@/components/FormControls';
 
 const SERVICES = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanout', 'Dog walking', 'Odd job'];
@@ -72,6 +73,14 @@ export default function RequestPage() {
               <p className="text-graphite text-[14.5px]">
                 Thanks — a manager will review your request and follow up shortly. Nothing has been charged.
               </p>
+              <div className="mt-6 pt-6 border-t border-black/10 flex flex-col items-center text-center">
+                <NotifyButton
+                  target={{ jobId: submittedJobId }}
+                  label="Notify me about this job"
+                  onLabel="You'll be notified about this job."
+                  hint="We'll let you know when a Butler is confirmed, and again the day before."
+                />
+              </div>
             </div>
           </Animate>
         ) : (

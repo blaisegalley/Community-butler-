@@ -24,6 +24,8 @@ import type { Backend } from './backend/types';
 
 import type {
   ActivityEntry,
+  PushTarget,
+  StoredPushSubscription,
   Admin,
   AdminSession,
   Butler,
@@ -36,6 +38,8 @@ import type {
 
 export type {
   ActivityEntry,
+  PushTarget,
+  StoredPushSubscription,
   Admin,
   AdminSession,
   Butler,
@@ -166,6 +170,13 @@ export async function changeAdminPassword(
   const changed = await (await backend()).changeAdminPassword(email, currentPassword, newPassword);
   emitChange();
   return changed;
+}
+
+export async function savePushSubscription(
+  target: PushTarget,
+  subscription: StoredPushSubscription,
+): Promise<void> {
+  await (await backend()).savePushSubscription(target, subscription);
 }
 
 // ---------- sessions ----------

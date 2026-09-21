@@ -15,6 +15,7 @@ import {
   signIn,
 } from '@/lib/store';
 import { useQuery } from '@/lib/useQuery';
+import NotifyButton from '@/components/NotifyButton';
 import { fieldWrap, inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
 
@@ -249,6 +250,16 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
             {loadError}
           </div>
         )}
+
+        <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4 mb-8">
+          <h2 className="text-[14.5px] font-semibold text-ink mb-2">Job alerts</h2>
+          <NotifyButton
+            target={{ butlerId: butler.id }}
+            label="Turn on job alerts"
+            onLabel="Job alerts are on."
+            hint="We'll notify you the moment a job opens up near you — first to accept gets it."
+          />
+        </div>
 
         <section className="mb-10">
           <h2 className="text-[15px] font-semibold text-ink mb-3">

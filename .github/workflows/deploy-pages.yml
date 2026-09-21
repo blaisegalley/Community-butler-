@@ -24,7 +24,22 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+
+      # Vite bakes these into the bundle at build time, so they have to be
+      # present here rather than set on the server. All three are safe to
+      # publish — the anon key identifies the project and authorises
+      # nothing on its own (Row Level Security decides that), and the VAPID
+      # public key is meant to ship inside the app. They live in GitHub
+      # Variables, not Secrets, for exactly that reason. Never add the
+      # service role key or the VAPID private key here.
+      #
+      # With them unset the site still builds and runs, on localStorage,
+      # with notifications switched off.
       - run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
       - uses: actions/configure-pages@v5
         with:
           enablement: true
