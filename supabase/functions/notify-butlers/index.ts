@@ -15,7 +15,7 @@ import { json, preflight } from '../_shared/http.ts';
 import { requireAdmin, serviceClient } from '../_shared/supabase.ts';
 import { sendPush, type PushSubscriptionRow } from '../_shared/push.ts';
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://blaisegalley.github.io/Community-butler-/';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://thecommunitybutler.com/';
 
 /** "12 Maple St, Arlington Heights" -> "Arlington Heights". Falls back to nothing. */
 function coarseArea(address: string): string {

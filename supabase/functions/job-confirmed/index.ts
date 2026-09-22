@@ -13,7 +13,7 @@ import { requireAdmin, serviceClient } from '../_shared/supabase.ts';
 import { sendPush, type PushSubscriptionRow } from '../_shared/push.ts';
 import { sendEmail } from '../_shared/email.ts';
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://blaisegalley.github.io/Community-butler-/';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://thecommunitybutler.com/';
 
 function readableDate(value: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';

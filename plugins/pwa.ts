@@ -9,7 +9,7 @@ const SW_TEMPLATE = fileURLToPath(new URL('../pwa/sw.js', import.meta.url));
  * Emits manifest.webmanifest and sw.js with the deploy path baked in.
  *
  * Neither file can be a plain public/ asset: Vite copies those verbatim,
- * and both need to know `base`. Hardcoding '/Community-butler-/' in them
+ * and both need to know `base`. Hardcoding a deploy path in them
  * would silently break the day the site moves to its own domain.
  */
 export default function pwa(): Plugin {

@@ -122,7 +122,7 @@ like a password, and don't paste it into a chat window.
 | `VAPID_SUBJECT` | `mailto:thecommunitybutler@gmail.com` |
 | `RESEND_API_KEY` | from step 2 |
 | `EMAIL_FROM` | `Community Butler <hello@thecommunitybutler.com>` |
-| `APP_URL` | `https://blaisegalley.github.io/Community-butler-/` |
+| `APP_URL` | `https://thecommunitybutler.com/` |
 | `APP_TIMEZONE` | `America/Chicago` |
 | `CRON_SECRET` | any long random string — make one up, save it, you need it again in step 6 |
 

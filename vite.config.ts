@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from 'node:url';
 import pwa from './plugins/pwa';
 
 export default defineConfig({
-  base: '/Community-butler-/',
+  base: '/',
   plugins: [react(), pwa()],
   resolve: {
     alias: {

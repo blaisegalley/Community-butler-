@@ -17,7 +17,7 @@ import { requireCronSecret, serviceClient } from '../_shared/supabase.ts';
 import { sendPush, type PushSubscriptionRow } from '../_shared/push.ts';
 import { sendEmail } from '../_shared/email.ts';
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'https://blaisegalley.github.io/Community-butler-/';
+const APP_URL = Deno.env.get('APP_URL') ?? 'https://thecommunitybutler.com/';
 const TIMEZONE = Deno.env.get('APP_TIMEZONE') ?? 'America/Chicago';
 
 /** Today's date in TIMEZONE, plus `offsetDays`, as 'YYYY-MM-DD'. */
