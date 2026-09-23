@@ -181,9 +181,12 @@ export async function savePushSubscription(
 
 // ---------- sessions ----------
 
+// Only a sign-in that worked changed anything. Announcing a failed one
+// makes every view refetch for no reason, and the refetch used to blank
+// the form that was about to show "wrong password".
 export async function adminLogin(email: string, password: string): Promise<boolean> {
   const ok = await (await backend()).adminLogin(email, password);
-  emitChange();
+  if (ok) emitChange();
   return ok;
 }
 
@@ -194,7 +197,7 @@ export async function adminLogout(): Promise<void> {
 
 export async function signIn(contact: string, password: string): Promise<SignInResult> {
   const result = await (await backend()).signIn(contact, password);
-  emitChange();
+  if (result.kind !== 'unknown') emitChange();
   return result;
 }
 

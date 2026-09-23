@@ -8,6 +8,18 @@ export interface QueryResult<T> {
   reload: () => void;
 }
 
+interface QueryState<T> {
+  data: T | null;
+  loading: boolean;
+  error: string | null;
+  /**
+   * Whether this query has ever come back. `null` is a legitimate answer —
+   * "nobody is signed in" — so the absence of data cannot stand in for
+   * "still waiting".
+   */
+  settled: boolean;
+}
+
 /**
  * Runs an async read and re-runs it whenever the store changes.
  *
@@ -21,9 +33,12 @@ export interface QueryResult<T> {
  * instance) — `load` is not compared, so an inline arrow is fine.
  */
 export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = []): QueryResult<T> {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<QueryState<T>>({
+    data: null,
+    loading: true,
+    error: null,
+    settled: false,
+  });
   const [nonce, setNonce] = useState(0);
 
   const loadRef = useRef(load);
@@ -33,21 +48,30 @@ export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = []): Query
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+
+    // Only the first load reports `loading`. A refetch keeps the current
+    // view on screen, because callers render a placeholder while loading —
+    // and swapping the view out unmounts whatever was there. That cost us
+    // the "wrong password" message: a failed sign-in triggered a refetch,
+    // the sign-in form was replaced by a spinner, and the error it was
+    // holding went with it. The person saw nothing happen at all.
+    setState((current) => (current.settled ? current : { ...current, loading: true }));
+
     loadRef
       .current()
       .then((value) => {
-        if (cancelled) return;
-        setData(value);
-        setError(null);
+        if (!cancelled) setState({ data: value, loading: false, error: null, settled: true });
       })
       .catch((cause: unknown) => {
         if (cancelled) return;
-        setError(cause instanceof Error ? cause.message : 'Something went wrong.');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
+        setState((current) => ({
+          ...current,
+          loading: false,
+          settled: true,
+          error: cause instanceof Error ? cause.message : 'Something went wrong.',
+        }));
       });
+
     return () => {
       cancelled = true;
     };
@@ -56,5 +80,5 @@ export function useQuery<T>(load: () => Promise<T>, deps: unknown[] = []): Query
 
   useEffect(() => onStoreChange(reload), [reload]);
 
-  return { data, loading, error, reload };
+  return { data: state.data, loading: state.loading, error: state.error, reload };
 }
