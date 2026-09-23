@@ -25,6 +25,34 @@ jobs:
           cache: npm
       - run: npm ci
 
+      # A build with these missing silently ships the localStorage
+      # fallback: the site works, but nothing is shared between devices
+      # and no notification can ever be sent. That is far too quiet a
+      # failure to leave undiagnosed, so say plainly what this build got.
+      # Also reports whether the values were saved as Secrets by mistake,
+      # since `vars` and `secrets` are different stores and the settings
+      # page puts them one tab apart.
+      - name: Report backend configuration
+        env:
+          SECRET_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SECRET_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          SECRET_VAPID: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+        run: |
+          report() {
+            if [ -n "$2" ]; then
+              echo "  [set]     $1  (${#2} chars)"
+            elif [ -n "$3" ]; then
+              echo "  [WRONG TAB] $1 is empty as a Variable, but IS set as a Secret (${#3} chars) — move it to the Variables tab"
+            else
+              echo "  [MISSING] $1"
+            fi
+          }
+          echo "Repository Variables visible to this build:"
+          report VITE_SUPABASE_URL      "${{ vars.VITE_SUPABASE_URL }}"      "$SECRET_URL"
+          report VITE_SUPABASE_ANON_KEY "${{ vars.VITE_SUPABASE_ANON_KEY }}" "$SECRET_KEY"
+          report VITE_VAPID_PUBLIC_KEY  "${{ vars.VITE_VAPID_PUBLIC_KEY }}"  "$SECRET_VAPID"
+          echo "All repository variable names that exist: ${{ toJSON(vars) }}"
+
       # Vite bakes these into the bundle at build time, so they have to be
       # present here rather than set on the server. All three are safe to
       # publish — the anon key identifies the project and authorises
