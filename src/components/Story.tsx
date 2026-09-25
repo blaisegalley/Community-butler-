@@ -9,7 +9,7 @@ const ASSURANCES = [
   },
   {
     title: 'Butlers are neighbors, not strangers',
-    body: 'Every butler is a local high-school student who signed up and was approved before taking work.',
+    body: 'Every butler is a local high-school student who signed up and was approved before taking work — and the students running the company go to school with them.',
   },
   {
     title: 'You name the budget',
@@ -35,6 +35,12 @@ export default function Story() {
               <p>
                 Community Butler exists to close that gap. Neighbors post the work that piles up, and trained,
                 motivated high-school butlers pick it up — close enough to walk, familiar enough to trust.
+              </p>
+              <p>
+                We started as a student project in Barrington&rsquo;s high-school incubator program, and we never left
+                it. Every year the company hands over to the next group of students in the program, who run the whole
+                thing &mdash; the bookings, the scheduling, the butlers, this website. The people you hire are the same
+                people running the business.
               </p>
               <p>
                 The money stays on the block, the jobs actually get finished, and the kid doing them learns what it

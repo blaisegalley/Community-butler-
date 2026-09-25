@@ -6,6 +6,10 @@ const QUESTIONS = [
     a: 'A local high-school student who signed up as a butler and was approved by a manager before being allowed to take work. You will be told who is coming before they arrive.',
   },
   {
+    q: 'Who runs Community Butler?',
+    a: 'Students do. The company was founded in Barrington\u2019s high-school incubator program and is still run by students in that program — a new group takes it over each year and handles the bookings, the scheduling, and the butlers themselves.',
+  },
+  {
     q: 'What does it cost?',
     a: 'You suggest a budget when you post the job, and you settle up with your butler directly. There is no subscription, and nothing is charged through this site.',
   },
