@@ -23,6 +23,8 @@ import {
   rejectJob,
 } from '@/lib/store';
 import { useQuery } from '@/lib/useQuery';
+import ProfileReview from '@/components/ProfileReview';
+import { getProfilesForReview } from '@/lib/profiles';
 import { inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
 
@@ -142,7 +144,7 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-type Tab = 'jobs' | 'butlers' | 'activity' | 'admins';
+type Tab = 'jobs' | 'profiles' | 'butlers' | 'activity' | 'admins';
 
 /**
  * The roster with each Butler's stats attached. One query per Butler is a
@@ -168,6 +170,9 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
   const activityQuery = useQuery(getActivity);
   const adminsQuery = useQuery(getAdmins);
   const rosterQuery = useQuery(loadRoster);
+  // Profiles only exist on the hosted backend — they need file storage
+  // for the photo and a server to draft the bio.
+  const profilesQuery = useQuery(async () => (isShared ? getProfilesForReview() : []));
 
   const loadError =
     jobsQuery.error ?? butlersQuery.error ?? activityQuery.error ?? adminsQuery.error;
@@ -179,6 +184,12 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
   const activity = activityQuery.data ?? [];
   const admins = adminsQuery.data ?? [];
   const butlersByActivity = rosterQuery.data ?? [];
+  const profiles = profilesQuery.data ?? [];
+  // Waiting profiles first: this tab is a queue, not a directory.
+  const sortedProfiles = profiles
+    .slice()
+    .sort((a, b) => (a.status === 'Pending' ? 0 : 1) - (b.status === 'Pending' ? 0 : 1));
+  const awaitingReview = profiles.filter((p) => p.status === 'Pending').length;
 
   const jobsThisWeek = jobs.filter((j) => sameWeek(j.submittedAt)).length;
   const pending = jobs.filter((j) => j.status === 'New').length;
@@ -186,6 +197,7 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
 
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: 'jobs', label: 'Job requests', count: jobs.length },
+    { id: 'profiles', label: 'Profiles to review', count: awaitingReview },
     { id: 'butlers', label: 'Butler roster', count: butlers.length },
     { id: 'activity', label: 'Activity', count: activity.length },
     { id: 'admins', label: 'Admins', count: admins.length },
@@ -256,6 +268,31 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
                   jobsQuery.loading
                     ? 'Loading job requests\u2026'
                     : 'No job requests yet — submissions from /request will appear here.'
+                }
+              />
+            )}
+          </section>
+        )}
+
+        {tab === 'profiles' && (
+          <section>
+            <p className="text-[12.5px] text-black/45 mb-3.5 max-w-[70ch]">
+              Nothing here is public until you approve it. Read the bio against what the Butler actually wrote — it is
+              drafted automatically and can overstate things. Every one of these is a minor, so check the photo is
+              really them and that a guardian has signed off.
+            </p>
+            {sortedProfiles.length ? (
+              <div className="flex flex-col gap-2.5">
+                {sortedProfiles.map((profile) => (
+                  <ProfileReview key={profile.id} profile={profile} onReviewed={profilesQuery.reload} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                text={
+                  profilesQuery.loading
+                    ? 'Loading profiles\u2026'
+                    : 'No Butler profiles yet — they appear here once a Butler fills one in.'
                 }
               />
             )}

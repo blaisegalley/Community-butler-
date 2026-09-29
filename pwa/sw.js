@@ -19,7 +19,7 @@ const SHELL_CACHE = `cb-shell-${VERSION}`;
 const ASSET_CACHE = `cb-assets-${VERSION}`;
 
 // The four entry points, so a cold offline launch still renders something.
-const SHELL_URLS = ['', 'request/', 'auth/', 'admin/'].map((path) => BASE + path);
+const SHELL_URLS = ['', 'request/', 'auth/', 'admin/', 'butlers/'].map((path) => BASE + path);
 
 // Hashed JS/CSS, injected at build time. Without these the cached HTML
 // would load offline and then render nothing: the worker only starts

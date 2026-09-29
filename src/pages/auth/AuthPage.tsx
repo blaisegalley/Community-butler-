@@ -16,6 +16,8 @@ import {
 } from '@/lib/store';
 import { useQuery } from '@/lib/useQuery';
 import NotifyButton from '@/components/NotifyButton';
+import ProfileForm from '@/components/ProfileForm';
+import { getMyProfile } from '@/lib/profiles';
 import { fieldWrap, inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
 
@@ -213,6 +215,9 @@ function GuestAuth({ onAuthed }: { onAuthed: () => void }) {
 }
 
 function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () => void }) {
+  // Profiles are a hosted-backend feature: they need file storage for the
+  // photo and a server to draft the bio.
+  const profileQuery = useQuery(async () => (isShared ? getMyProfile() : null), [butler.id]);
   const availableQuery = useQuery(() => getAvailableJobsForButler(butler.id), [butler.id]);
   const mineQuery = useQuery(() => getMyJobsForButler(butler.id), [butler.id]);
 
@@ -249,6 +254,14 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
           <div className="rounded-[10px] border border-[#C4442E]/35 bg-[#C4442E]/10 text-[#8c2f1c] text-[13px] px-4 py-3 mb-5">
             {loadError}
           </div>
+        )}
+
+        {isShared && (
+          <ProfileForm
+            butlerName={butler.name}
+            profile={profileQuery.data ?? null}
+            onSubmitted={profileQuery.reload}
+          />
         )}
 
         <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4 mb-8">

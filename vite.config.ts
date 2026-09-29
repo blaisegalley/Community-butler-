@@ -20,6 +20,7 @@ export default defineConfig({
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
         request: fileURLToPath(new URL('./request/index.html', import.meta.url)),
         auth: fileURLToPath(new URL('./auth/index.html', import.meta.url)),
+        butlers: fileURLToPath(new URL('./butlers/index.html', import.meta.url)),
         admin: fileURLToPath(new URL('./admin/index.html', import.meta.url)),
       },
     },

@@ -10,6 +10,12 @@ export default function SiteHeader() {
       </a>
       <div className="flex items-center gap-3">
         <a
+          href={withBase('butlers/')}
+          className="hidden sm:inline-flex h-[42px] px-4 items-center text-ink text-[13.5px] font-medium hover:opacity-70 transition-opacity"
+        >
+          Our butlers
+        </a>
+        <a
           href={withBase('auth/?mode=signin')}
           className="h-[42px] px-5 rounded-[11px] border border-ink/15 text-ink text-[13.5px] font-medium inline-flex items-center hover:bg-black/5 transition-colors"
         >
