@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { loadMetrics } from '@/lib/metrics';
+import { loadMetrics, type Metrics } from '@/lib/metrics';
 import { useQuery } from '@/lib/useQuery';
 import { BarRows, Funnel, LinePair, SERIES, StatTile } from '@/components/Charts';
 
@@ -21,6 +21,17 @@ function money(amount: number): string {
   return `$${Math.round(amount).toLocaleString()}`;
 }
 
+/*
+ * The desk lives in a Claude artifact, whose sandbox cannot call Supabase —
+ * it cannot reach any outside host at all. So the numbers travel by hand:
+ * this copies the current window as JSON, and pasting it into the chat is
+ * what refreshes the desk. A snapshot, carrying the moment it was taken,
+ * so a stale desk never passes itself off as live.
+ */
+function deskSnapshot(m: Metrics): string {
+  return JSON.stringify({ version: 1, capturedAt: new Date().toISOString(), ...m });
+}
+
 function Card({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
   return (
     <div className="bg-white border border-black/10 rounded-[14px] p-4">
@@ -34,6 +45,7 @@ function Card({ title, note, children }: { title: string; note?: string; childre
 
 export default function Dashboard() {
   const [days, setDays] = useState(30);
+  const [copied, setCopied] = useState<'idle' | 'done' | 'failed'>('idle');
   const { data, loading, error } = useQuery(() => loadMetrics(days), [days]);
 
   if (error) {
@@ -64,6 +76,22 @@ export default function Dashboard() {
           </button>
         ))}
         {loading && <span className="text-[12px] text-black/40 ml-2">refreshing&hellip;</span>}
+
+        <button
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(deskSnapshot(m));
+              setCopied('done');
+            } catch {
+              setCopied('failed');
+            }
+            setTimeout(() => setCopied('idle'), 4000);
+          }}
+          className="h-[32px] px-3.5 ml-auto rounded-[8px] text-[12.5px] font-medium bg-white border border-black/10 text-ink hover:bg-black/5 transition-colors"
+          title="Copies these numbers as text. Paste it to Claude to refresh the desk."
+        >
+          {copied === 'done' ? 'Copied — paste it to Claude' : copied === 'failed' ? "Couldn't copy" : 'Copy snapshot for the desk'}
+        </button>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
