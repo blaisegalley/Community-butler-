@@ -112,6 +112,7 @@ function HeroVideoBackground() {
 const NAV_LINKS = [
   { label: 'For Neighbors', href: withBase('request/') },
   { label: 'For Butlers', href: withBase('auth/') },
+  { label: 'Our Team', href: withBase('butlers/') },
   { label: 'Our Story', href: '#story' },
 ];
 

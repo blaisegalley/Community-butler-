@@ -10,6 +10,9 @@ export default function SiteFooter() {
           <Wordmark className="text-white" />
         </a>
         <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13.5px]">
+          <a href={withBase('butlers/')} className="hover:text-white transition-colors">
+            Meet our butlers
+          </a>
           <a href="mailto:thecommunitybutler@gmail.com" className="hover:text-white transition-colors">
             thecommunitybutler@gmail.com
           </a>
