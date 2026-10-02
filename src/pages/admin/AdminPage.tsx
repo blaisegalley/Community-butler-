@@ -24,6 +24,7 @@ import {
 } from '@/lib/store';
 import { useQuery } from '@/lib/useQuery';
 import ProfileReview from '@/components/ProfileReview';
+import Dashboard from '@/components/Dashboard';
 import { getProfilesForReview } from '@/lib/profiles';
 import { inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
@@ -122,15 +123,6 @@ const STATUS_STYLES: Record<JobStatus, string> = {
   Rejected: 'bg-[#C4442E]/12 text-[#8c2f1c]',
 };
 
-function sameWeek(iso: string) {
-  return Date.now() - +new Date(iso) <= 7 * 24 * 60 * 60 * 1000;
-}
-function sameMonth(iso: string | null) {
-  if (!iso) return false;
-  const d = new Date(iso);
-  const now = new Date();
-  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-}
 function fmtRelative(iso: string) {
   const mins = Math.round((Date.now() - +new Date(iso)) / 60000);
   if (mins < 1) return 'just now';
@@ -144,7 +136,7 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-type Tab = 'jobs' | 'profiles' | 'butlers' | 'activity' | 'admins';
+type Tab = 'dashboard' | 'jobs' | 'profiles' | 'butlers' | 'activity' | 'admins';
 
 /**
  * The roster with each Butler's stats attached. One query per Butler is a
@@ -163,7 +155,7 @@ async function loadRoster(): Promise<{ butler: Butler; stats: ButlerStats }[]> {
 }
 
 function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<Tab>('jobs');
+  const [tab, setTab] = useState<Tab>('dashboard');
 
   const jobsQuery = useQuery(getJobs);
   const butlersQuery = useQuery(getButlers);
@@ -191,11 +183,9 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
     .sort((a, b) => (a.status === 'Pending' ? 0 : 1) - (b.status === 'Pending' ? 0 : 1));
   const awaitingReview = profiles.filter((p) => p.status === 'Pending').length;
 
-  const jobsThisWeek = jobs.filter((j) => sameWeek(j.submittedAt)).length;
-  const pending = jobs.filter((j) => j.status === 'New').length;
-  const completedThisMonth = jobs.filter((j) => j.status === 'Completed' && sameMonth(j.completedAt)).length;
 
   const TABS: { id: Tab; label: string; count: number }[] = [
+    { id: 'dashboard', label: 'Dashboard', count: -1 },
     { id: 'jobs', label: 'Job requests', count: jobs.length },
     { id: 'profiles', label: 'Profiles to review', count: awaitingReview },
     { id: 'butlers', label: 'Butler roster', count: butlers.length },
@@ -233,13 +223,6 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5 mb-8">
-          <StatTile value={jobsThisWeek} label="Jobs this week" />
-          <StatTile value={pending} label="Pending approvals" />
-          <StatTile value={butlers.length} label="Active Butlers" />
-          <StatTile value={completedThisMonth} label="Completed this month" />
-        </div>
-
         <div className="flex gap-1.5 mb-6 flex-wrap">
           {TABS.map((t) => (
             <button
@@ -249,10 +232,15 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
                 tab === t.id ? 'bg-ink text-white' : 'bg-white border border-black/10 text-ink hover:bg-black/5'
               }`}
             >
-              {t.label} <span className={tab === t.id ? 'text-white/60' : 'text-black/40'}>({t.count})</span>
+              {t.label}
+              {t.count >= 0 && (
+                <span className={tab === t.id ? 'text-white/60' : 'text-black/40'}> ({t.count})</span>
+              )}
             </button>
           ))}
         </div>
+
+        {tab === 'dashboard' && <Dashboard />}
 
         {tab === 'jobs' && (
           <section>
@@ -459,14 +447,6 @@ function ChangePasswordCard({ email }: { email: string }) {
   );
 }
 
-function StatTile({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4">
-      <div className="text-[26px] font-bold text-ink tabular-nums">{value}</div>
-      <div className="text-[12px] text-black/45 mt-1">{label}</div>
-    </div>
-  );
-}
 
 function EmptyState({ text }: { text: string }) {
   return (
