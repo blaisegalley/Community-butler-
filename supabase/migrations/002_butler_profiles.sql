@@ -71,32 +71,50 @@ create trigger butlers_guard_publication before update on public.butlers
   for each row execute function public.butlers_guard_publication();
 
 -- ------------------------------------------------------------- storage
+--
+-- Everything below is wrapped so a permissions failure cannot abort the
+-- script. Supabase runs the whole file as one transaction, and
+-- storage.objects is owned by supabase_storage_admin — so on some
+-- projects `create policy` on it raises, and an unguarded raise would
+-- roll back the table changes above it too. If a block is skipped it
+-- says so, and the dashboard can do that part instead.
 
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'butler-photos', 'butler-photos', true, 5242880,
-  array['image/jpeg', 'image/png', 'image/webp']
-)
-on conflict (id) do update
-  set file_size_limit = excluded.file_size_limit,
-      allowed_mime_types = excluded.allowed_mime_types;
+do $$
+begin
+  insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values (
+    'butler-photos', 'butler-photos', true, 5242880,
+    array['image/jpeg', 'image/png', 'image/webp']
+  )
+  on conflict (id) do update
+    set file_size_limit = excluded.file_size_limit,
+        allowed_mime_types = excluded.allowed_mime_types,
+        public = true;
+  raise notice 'butler-photos bucket ready';
+exception when insufficient_privilege or undefined_table then
+  raise notice 'SKIPPED: could not create the butler-photos bucket from SQL. Create it by hand: Storage -> New bucket -> name "butler-photos", Public ON.';
+end $$;
 
 -- A butler writes only inside a folder named after their own user id, so
 -- one butler cannot overwrite another's photo.
-drop policy if exists "butler uploads own photo" on storage.objects;
-create policy "butler uploads own photo" on storage.objects for insert to authenticated
-  with check (
-    bucket_id = 'butler-photos'
-    and (storage.foldername(name))[1] = auth.uid()::text
-  );
+do $$
+begin
+  execute $p$drop policy if exists "butler uploads own photo" on storage.objects$p$;
+  execute $p$create policy "butler uploads own photo" on storage.objects for insert to authenticated
+    with check (bucket_id = 'butler-photos' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
 
-drop policy if exists "butler replaces own photo" on storage.objects;
-create policy "butler replaces own photo" on storage.objects for update to authenticated
-  using (bucket_id = 'butler-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+  execute $p$drop policy if exists "butler replaces own photo" on storage.objects$p$;
+  execute $p$create policy "butler replaces own photo" on storage.objects for update to authenticated
+    using (bucket_id = 'butler-photos' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
 
-drop policy if exists "butler removes own photo" on storage.objects;
-create policy "butler removes own photo" on storage.objects for delete to authenticated
-  using (bucket_id = 'butler-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+  execute $p$drop policy if exists "butler removes own photo" on storage.objects$p$;
+  execute $p$create policy "butler removes own photo" on storage.objects for delete to authenticated
+    using (bucket_id = 'butler-photos' and (storage.foldername(name))[1] = auth.uid()::text)$p$;
+
+  raise notice 'storage policies ready';
+exception when insufficient_privilege or undefined_table then
+  raise notice 'SKIPPED: could not create storage policies from SQL. Add them in Storage -> Policies on the butler-photos bucket: allow authenticated INSERT/UPDATE/DELETE where the first folder equals auth.uid().';
+end $$;
 
 -- ---------------------------------------------------------------- rpcs
 
@@ -199,3 +217,38 @@ $$;
 
 revoke all on function public.review_butler_profile(uuid,text,text,text,text) from public;
 grant execute on function public.review_butler_profile(uuid,text,text,text,text) to authenticated;
+
+-- ------------------------------------------------------------- verify
+--
+-- Run as part of the script. Every row should say OK. Anything that says
+-- MISSING did not get created, and the notices above say why.
+
+select 'columns on butlers' as check,
+       case when count(*) = 9 then 'OK' else 'MISSING (' || count(*) || ' of 9)' end as result
+  from information_schema.columns
+ where table_schema = 'public' and table_name = 'butlers'
+   and column_name in ('intake','display_name','bio','photo_path','profile_status',
+                       'profile_note','reviewed_at','guardian_consent','guardian_name')
+union all
+select 'public_butlers()',
+       case when count(*) = 1 then 'OK' else 'MISSING' end
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname = 'public_butlers'
+union all
+select 'submit_butler_profile()',
+       case when count(*) = 1 then 'OK' else 'MISSING' end
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname = 'submit_butler_profile'
+union all
+select 'review_butler_profile()',
+       case when count(*) = 1 then 'OK' else 'MISSING' end
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+ where n.nspname = 'public' and p.proname = 'review_butler_profile'
+union all
+select 'butler-photos bucket',
+       case when count(*) = 1 then 'OK' else 'MISSING - create it in Storage' end
+  from storage.buckets where id = 'butler-photos';
+
+-- PostgREST caches the schema; without this the new functions stay 404
+-- for a minute or two even though they exist.
+notify pgrst, 'reload schema';
