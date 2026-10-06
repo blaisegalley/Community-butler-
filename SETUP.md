@@ -183,10 +183,13 @@ Then **Actions** → **Deploy to GitHub Pages** → **Run workflow**.
 VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... node scripts/verify-backend.mjs
 ```
 
-This confirms the tables exist, the edge functions are deployed, a
-signed-out neighbour can post a job — and, most importantly, that nobody
-can read neighbours' addresses without signing in. Every failing line
-names the step to go back to.
+This confirms the tables exist, the edge functions are deployed, and —
+most importantly — that nobody can read neighbours' addresses without
+signing in. Every failing line names the step to go back to.
+
+It doesn't create anything. Add `--post-job` to the end to also check
+that a signed-out neighbour can post a job; that leaves a "Setup Check"
+job in the admin queue to reject afterwards.
 
 Then walk through it by hand:
 

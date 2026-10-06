@@ -9,12 +9,14 @@
  * doubles as a privacy check: anything it can read without signing in is
  * something the whole internet can read.
  *
- * It creates one test job and leaves it behind as a 'New' request. Reject
- * it from the admin dashboard afterwards.
+ * By default it creates nothing. Pass --post-job to also check that a
+ * signed-out neighbour can post a job; that leaves one "Setup Check" job
+ * behind as a 'New' request, to reject from the admin dashboard.
  */
 
 const url = (process.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
 const key = process.env.VITE_SUPABASE_ANON_KEY || '';
+const postJob = process.argv.includes('--post-job');
 
 if (!url || !key) {
   console.error('Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY first.');
@@ -61,22 +63,28 @@ for (const table of ['jobs', 'butlers', 'activity', 'push_subscriptions']) {
   );
 }
 
-// 3. A signed-out neighbour can still post a job.
-const posted = await rest('rpc/post_job', {
-  method: 'POST',
-  body: JSON.stringify({
-    p_service: 'Yard work',
-    p_name: 'Setup Check',
-    p_phone: '0000000000',
-    p_email: '',
-    p_address: '1 Test St, Arlington Heights',
-    p_scheduled_for: '',
-    p_budget: '',
-    p_details: 'Created by scripts/verify-backend.mjs — safe to reject.',
-  }),
-});
-const jobId = typeof posted.body === 'string' ? posted.body : null;
-check('a signed-out neighbour can post a job', posted.status === 200 && Boolean(jobId), `HTTP ${posted.status}`);
+// 3. A signed-out neighbour can still post a job. Opt-in, because it
+//    leaves a real job in the admin queue.
+let jobId = null;
+if (postJob) {
+  const posted = await rest('rpc/post_job', {
+    method: 'POST',
+    body: JSON.stringify({
+      p_service: 'Yard work',
+      p_name: 'Setup Check',
+      p_phone: '0000000000',
+      p_email: '',
+      p_address: '1 Test St, Arlington Heights',
+      p_scheduled_for: '',
+      p_budget: '',
+      p_details: 'Created by scripts/verify-backend.mjs — safe to reject.',
+    }),
+  });
+  jobId = typeof posted.body === 'string' ? posted.body : null;
+  check('a signed-out neighbour can post a job', posted.status === 200 && Boolean(jobId), `HTTP ${posted.status}`);
+} else {
+  console.log('SKIP  posting a test job — pass --post-job to check it');
+}
 
 // 4. ...and cannot read it back, or anyone else's.
 if (jobId) {
@@ -112,6 +120,8 @@ for (const fn of ['notify-butlers', 'job-confirmed', 'send-reminders', 'invite-a
 console.log(
   failures
     ? `\n${failures} check(s) failed. Work through SETUP.md again — the failing line names the step.`
-    : '\nAll checks passed. Reject the "Setup Check" job in the admin dashboard when you are done.',
+    : postJob
+      ? '\nAll checks passed. Reject the "Setup Check" job in the admin dashboard when you are done.'
+      : '\nAll checks passed. No test job was created.',
 );
 process.exit(failures ? 1 : 0);
