@@ -127,6 +127,16 @@ export async function submitProfile(submission: ProfileSubmission): Promise<void
       .from(BUCKET)
       .upload(photoPath, submission.photo, { upsert: true, contentType: submission.photo.type });
     if (error) throw new Error(`Could not upload that photo: ${error.message}`);
+  } else {
+    // No new photo: keep the one already on file. Sending an empty path
+    // would wipe it, because submit_butler_profile overwrites the column.
+    const { data: current, error } = await db
+      .from('butlers')
+      .select('photo_path')
+      .eq('user_id', auth.user.id)
+      .maybeSingle();
+    if (error) throw new Error(`Could not load your current profile: ${error.message}`);
+    photoPath = ((current as Record<string, unknown> | null)?.photo_path as string) ?? '';
   }
 
   const { error } = await db.rpc('submit_butler_profile', {
