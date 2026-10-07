@@ -53,7 +53,6 @@ export default function ProfileForm({
   const [error, setError] = useState('');
 
   const copy = STATUS_COPY[status];
-  const hasPhoto = Boolean(photo || profile?.photoUrl);
 
   function update<K extends keyof ButlerIntake>(key: K, value: ButlerIntake[K]) {
     setIntake((current) => ({ ...current, [key]: value }));
@@ -71,10 +70,6 @@ export default function ProfileForm({
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!e.currentTarget.reportValidity()) return;
-    if (!hasPhoto) {
-      setError('A photo is required — neighbors want to know who is coming to the door.');
-      return;
-    }
     setBusy(true);
     setError('');
     try {
@@ -208,7 +203,7 @@ export default function ProfileForm({
 
           <div className={fieldWrap}>
             <label className={labelClass} htmlFor="pf-photo">
-              A photo of you {profile?.photoUrl ? '(optional — you already have one)' : ''}
+              A photo of you (optional{profile?.photoUrl ? ' — you already have one' : ''})
             </label>
             <input
               id="pf-photo"
@@ -218,7 +213,7 @@ export default function ProfileForm({
               onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
             />
             <p className="text-[12px] text-black/45 mt-1">
-              A clear photo of your face, like a school photo. Under 5MB.
+              Not required. If you add one, use a clear photo of your face, like a school photo. Under 5MB.
             </p>
           </div>
 
