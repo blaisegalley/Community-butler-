@@ -46,6 +46,7 @@ export default function ProfileForm({
     profile?.displayName || suggestDisplayName(butlerName),
   );
   const [photo, setPhoto] = useState<File | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [consent, setConsent] = useState(profile?.guardianConsent ?? false);
   const [guardianName, setGuardianName] = useState(profile?.guardianName ?? '');
   const [guardianContact, setGuardianContact] = useState(profile?.guardianContact ?? '');
@@ -77,6 +78,7 @@ export default function ProfileForm({
         intake,
         displayName,
         photo,
+        removePhoto,
         guardianConsent: consent,
         guardianName,
         guardianContact,
@@ -215,6 +217,12 @@ export default function ProfileForm({
             <p className="text-[12px] text-black/45 mt-1">
               Not required. If you add one, use a clear photo of your face, like a school photo. Under 5MB.
             </p>
+            {profile?.photoUrl && !photo && (
+              <label className="flex items-center gap-2 text-[13px] text-ink mt-2">
+                <input type="checkbox" checked={removePhoto} onChange={(e) => setRemovePhoto(e.target.checked)} />
+                Remove my photo
+              </label>
+            )}
           </div>
 
           <div className={`${fieldWrap} rounded-[10px] bg-sand border border-black/10 p-3.5`}>

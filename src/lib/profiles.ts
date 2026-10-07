@@ -34,6 +34,8 @@ export interface ProfileSubmission {
   intake: ButlerIntake;
   displayName: string;
   photo: File | null;
+  /** Take the current photo off the profile. Ignored if `photo` is set. */
+  removePhoto: boolean;
   guardianConsent: boolean;
   guardianName: string;
   guardianContact: string;
@@ -104,9 +106,10 @@ export function suggestDisplayName(fullName: string): string {
 }
 
 /**
- * Uploads the photo, saves the answers, and asks the server for a bio
- * draft. Leaves the profile Pending either way — a failed draft is not a
- * reason to lose a submission a butler just spent five minutes on.
+ * Uploads, keeps or removes the photo, saves the answers, and asks the
+ * server for a bio draft. Leaves the profile Pending either way — a failed
+ * draft is not a reason to lose a submission a butler just spent five
+ * minutes on.
  */
 export async function submitProfile(submission: ProfileSubmission): Promise<void> {
   const db = await client();
@@ -114,7 +117,17 @@ export async function submitProfile(submission: ProfileSubmission): Promise<void
   const { data: auth } = await db.auth.getUser();
   if (!auth.user) throw new Error('Sign in again before submitting your profile.');
 
-  let photoPath = '';
+  // The photo already on file. submit_butler_profile overwrites the
+  // column, so this has to be sent back to keep it.
+  const { data: current, error: currentError } = await db
+    .from('butlers')
+    .select('photo_path')
+    .eq('user_id', auth.user.id)
+    .maybeSingle();
+  if (currentError) throw new Error(`Could not load your current profile: ${currentError.message}`);
+  const previousPath = ((current as Record<string, unknown> | null)?.photo_path as string) ?? '';
+
+  let photoPath = submission.removePhoto ? '' : previousPath;
   if (submission.photo) {
     if (submission.photo.size > MAX_PHOTO_BYTES) {
       throw new Error('That photo is over 5MB. Try a smaller one.');
@@ -127,16 +140,6 @@ export async function submitProfile(submission: ProfileSubmission): Promise<void
       .from(BUCKET)
       .upload(photoPath, submission.photo, { upsert: true, contentType: submission.photo.type });
     if (error) throw new Error(`Could not upload that photo: ${error.message}`);
-  } else {
-    // No new photo: keep the one already on file. Sending an empty path
-    // would wipe it, because submit_butler_profile overwrites the column.
-    const { data: current, error } = await db
-      .from('butlers')
-      .select('photo_path')
-      .eq('user_id', auth.user.id)
-      .maybeSingle();
-    if (error) throw new Error(`Could not load your current profile: ${error.message}`);
-    photoPath = ((current as Record<string, unknown> | null)?.photo_path as string) ?? '';
   }
 
   const { error } = await db.rpc('submit_butler_profile', {
@@ -148,6 +151,13 @@ export async function submitProfile(submission: ProfileSubmission): Promise<void
     p_guardian_contact: submission.guardianContact,
   });
   if (error) throw new Error(`Could not save your profile: ${error.message}`);
+
+  // The bucket is public, so a removed or replaced photo is only really
+  // gone once the file is deleted, not just unlinked from the profile.
+  if (previousPath && previousPath !== photoPath) {
+    const { error: removeError } = await db.storage.from(BUCKET).remove([previousPath]);
+    if (removeError) console.warn('Could not delete the old photo file:', removeError.message);
+  }
 
   const { error: draftError } = await db.functions.invoke('draft-bio', { body: {} });
   if (draftError) {
