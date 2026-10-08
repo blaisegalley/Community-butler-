@@ -46,6 +46,7 @@ export default function ProfileForm({
     profile?.displayName || suggestDisplayName(butlerName),
   );
   const [photo, setPhoto] = useState<File | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
   const [consent, setConsent] = useState(profile?.guardianConsent ?? false);
   const [guardianName, setGuardianName] = useState(profile?.guardianName ?? '');
   const [guardianContact, setGuardianContact] = useState(profile?.guardianContact ?? '');
@@ -53,7 +54,6 @@ export default function ProfileForm({
   const [error, setError] = useState('');
 
   const copy = STATUS_COPY[status];
-  const hasPhoto = Boolean(photo || profile?.photoUrl);
 
   function update<K extends keyof ButlerIntake>(key: K, value: ButlerIntake[K]) {
     setIntake((current) => ({ ...current, [key]: value }));
@@ -71,10 +71,6 @@ export default function ProfileForm({
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!e.currentTarget.reportValidity()) return;
-    if (!hasPhoto) {
-      setError('A photo is required — neighbors want to know who is coming to the door.');
-      return;
-    }
     setBusy(true);
     setError('');
     try {
@@ -82,6 +78,7 @@ export default function ProfileForm({
         intake,
         displayName,
         photo,
+        removePhoto,
         guardianConsent: consent,
         guardianName,
         guardianContact,
@@ -208,7 +205,7 @@ export default function ProfileForm({
 
           <div className={fieldWrap}>
             <label className={labelClass} htmlFor="pf-photo">
-              A photo of you {profile?.photoUrl ? '(optional — you already have one)' : ''}
+              A photo of you (optional{profile?.photoUrl ? ' — you already have one' : ''})
             </label>
             <input
               id="pf-photo"
@@ -218,8 +215,14 @@ export default function ProfileForm({
               onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
             />
             <p className="text-[12px] text-black/45 mt-1">
-              A clear photo of your face, like a school photo. Under 5MB.
+              Not required. If you add one, use a clear photo of your face, like a school photo. Under 5MB.
             </p>
+            {profile?.photoUrl && !photo && (
+              <label className="flex items-center gap-2 text-[13px] text-ink mt-2">
+                <input type="checkbox" checked={removePhoto} onChange={(e) => setRemovePhoto(e.target.checked)} />
+                Remove my photo
+              </label>
+            )}
           </div>
 
           <div className={`${fieldWrap} rounded-[10px] bg-sand border border-black/10 p-3.5`}>
