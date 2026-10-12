@@ -1,0 +1,537 @@
+<title>Harvey Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one working column. A status strip on top (what's waiting on Blaise), tabs below, cards for emails, a table for the pipeline. */
+:root {
+  --bg: #F4EEE3;          /* sand, from the Community Butler site */
+  --surface: #FBF8F2;
+  --line: #E2D8C6;
+  --fg: #161A17;
+  --muted: #5B6660;
+  --brand: #1F3327;       /* forest */
+  --brand-fg: #F4EEE3;
+  --accent: #C6602B;      /* ember: things waiting on you */
+  --ok: #2F6B45;
+  --ok-bg: #E1EDDF;
+  --warn: #8A5A0B;
+  --warn-bg: #F6E7C8;
+  --bad: #A23A2A;
+  --bad-bg: #F5DDD6;
+  --quiet-bg: #ECE5D7;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121613; --surface: #1A201C; --line: #2B342E; --fg: #E9E4DA; --muted: #9AA59E;
+    --brand: #9CC3A6; --brand-fg: #121613; --accent: #E28A57;
+    --ok: #8CCB9E; --ok-bg: #1E3326; --warn: #E6BC6A; --warn-bg: #352A14; --bad: #EE9A88; --bad-bg: #3A1F1A; --quiet-bg: #222924;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121613; --surface: #1A201C; --line: #2B342E; --fg: #E9E4DA; --muted: #9AA59E;
+  --brand: #9CC3A6; --brand-fg: #121613; --accent: #E28A57;
+  --ok: #8CCB9E; --ok-bg: #1E3326; --warn: #E6BC6A; --warn-bg: #352A14; --bad: #EE9A88; --bad-bg: #3A1F1A; --quiet-bg: #222924;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--font); }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; display: grid; gap: 18px; }
+h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0; }
+h2 { font-size: 16px; font-weight: 600; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--brand); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.strip > div { background: var(--surface); padding: 12px 14px; display: grid; gap: 2px; }
+.strip .num { font-size: 22px; font-weight: 500; }
+.strip .hot .num { color: var(--accent); }
+@media (max-width: 620px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.banner { border-radius: var(--r); padding: 12px 14px; display: grid; gap: 4px; }
+.banner.bad { background: var(--bad-bg); color: var(--bad); }
+.banner.warn { background: var(--warn-bg); color: var(--warn); }
+.banner.info { background: var(--quiet-bg); color: var(--fg); }
+
+nav.tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+nav.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; font: 500 14px var(--font); color: var(--muted); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+nav.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--brand); }
+nav.tabs .count { font: 500 11px var(--mono); background: var(--quiet-bg); color: var(--muted); border-radius: 99px; padding: 1px 7px; }
+nav.tabs .count.hot { background: var(--accent); color: var(--brand-fg); }
+
+section.panel { display: grid; gap: 14px; }
+.group-title { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.card-head { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.card-head .who { font-weight: 600; }
+.why { border-left: 3px solid var(--line); padding-left: 10px; font-size: 14px; }
+.fields { display: grid; gap: 8px; }
+label { font-size: 12px; font-weight: 600; color: var(--muted); display: grid; gap: 4px; }
+input, textarea, select { font: 15px/1.5 var(--font); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; min-width: 0; }
+textarea { resize: vertical; min-height: 140px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.footer-preview { font: 13px/1.5 var(--font); color: var(--muted); white-space: pre-wrap; background: var(--quiet-bg); border-radius: 6px; padding: 8px 10px; }
+.gate { font-size: 13px; display: grid; gap: 2px; }
+.gate.ok { color: var(--ok); }
+.gate.fail { color: var(--bad); }
+.gate ul { margin: 0; padding-left: 18px; }
+.note { font-size: 13px; background: var(--warn-bg); color: var(--warn); border-radius: 6px; padding: 6px 10px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { font: 600 14px var(--font); border-radius: 6px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--fg); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+.btn.primary { background: var(--brand); color: var(--brand-fg); border-color: var(--brand); }
+.btn.danger { color: var(--bad); }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.btn.link { border: 0; background: none; padding: 4px 6px; color: var(--muted); font-weight: 500; }
+
+.pill { font: 600 11px var(--font); letter-spacing: 0.04em; text-transform: uppercase; border-radius: 99px; padding: 2px 8px; background: var(--quiet-bg); color: var(--muted); white-space: nowrap; }
+.pill.a { background: var(--ok-bg); color: var(--ok); }
+.pill.b { background: var(--warn-bg); color: var(--warn); }
+.pill.hot { background: var(--accent); color: var(--brand-fg); }
+.pill.good { background: var(--ok-bg); color: var(--ok); }
+.pill.bad { background: var(--bad-bg); color: var(--bad); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td select { width: auto; padding: 4px 6px; font-size: 13px; }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { font: 500 13px var(--font); border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 99px; padding: 4px 12px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--brand); color: var(--brand-fg); border-color: var(--brand); }
+
+.empty { border: 1px dashed var(--line); border-radius: var(--r); padding: 22px; color: var(--muted); display: grid; gap: 6px; }
+.reply-text { white-space: pre-wrap; font-size: 14px; }
+.row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 620px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 14px; }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .15s; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="eyebrow">Community Butler outreach</p>
+      <h1>Harvey Desk</h1>
+    </div>
+    <p class="small muted" id="last-run">Waiting for the pipeline to load…</p>
+  </header>
+
+  <div class="strip" aria-label="Today at a glance">
+    <div class="hot"><span class="eyebrow">To review</span><span class="num" id="s-review">0</span></div>
+    <div><span class="eyebrow">Ready to send</span><span class="num" id="s-ready">0</span></div>
+    <div><span class="eyebrow">Sent today</span><span class="num" id="s-sent">0</span></div>
+    <div><span class="eyebrow">Replies to answer</span><span class="num" id="s-replies">0</span></div>
+  </div>
+
+  <div id="banners" style="display:grid;gap:8px"></div>
+
+  <nav class="tabs" role="tablist" aria-label="Desk sections">
+    <button role="tab" id="tab-outbox" aria-selected="true" data-tab="outbox">Outbox <span class="count" id="c-outbox">0</span></button>
+    <button role="tab" id="tab-pipeline" aria-selected="false" data-tab="pipeline">Pipeline <span class="count" id="c-pipeline">0</span></button>
+    <button role="tab" id="tab-replies" aria-selected="false" data-tab="replies">Replies <span class="count" id="c-replies">0</span></button>
+    <button role="tab" id="tab-optouts" aria-selected="false" data-tab="optouts">Opt-outs <span class="count" id="c-optouts">0</span></button>
+    <button role="tab" id="tab-settings" aria-selected="false" data-tab="settings">Settings</button>
+  </nav>
+
+  <main id="panel">
+    <section class="panel">
+      <div class="empty">
+        <h2>Nothing here yet</h2>
+        <p>Emails Harvey writes show up in this outbox. You read each one, edit it if you want, approve it, then send it from Gmail. Ask Claude to “run Harvey” to fill it.</p>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script type="module">
+const TZ = 'America/Chicago';
+const QUIET = { start: 21, end: 8 }; // hours, Chicago time
+const STEP_LABEL = { 1: 'First email', 2: 'Follow-up', 3: 'Last note', reply: 'Reply' };
+const TRACK_LABEL = { A: 'Agent', B: 'Website' };
+const PROSPECT_STATUSES = ['new', 'queued', 'contacted', 'replied', 'later', 'won', 'lost', 'skip', 'opted_out'];
+const STATUS_TONE = { new: '', queued: 'hot', contacted: '', replied: 'good', later: '', won: 'good', lost: 'bad', skip: '', opted_out: 'bad' };
+const DEFAULT_SETTINGS = { from_name: 'Blaise Galley', role: 'Chief Expansion Officer, Community Butler', website: 'thecommunitybutler.com', from_email: 'thecommunitybutler@gmail.com', mailing_address: '', max_daily_sends: 20 };
+
+// ---------- tiny DOM helper (textContent only, so stored text can never become markup)
+function el(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else if (k === 'value') n.value = v;
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) n.append(kid instanceof Node ? kid : String(kid));
+  return n;
+}
+const $ = (id) => document.getElementById(id);
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => (t.hidden = true), 2600); }
+function safeUrl(u) { try { const x = new URL(u); return /^https?:$/.test(x.protocol) ? x.href : null; } catch { return null; } }
+function link(u, text) { const s = safeUrl(u); return s ? el('a', { href: s, target: '_blank', rel: 'noopener' }, text || new URL(s).hostname) : (text || u || ''); }
+function chicagoDay(iso) { return iso ? new Date(iso).toLocaleDateString('en-CA', { timeZone: TZ }) : ''; }
+function chicagoHour() { return Number(new Date().toLocaleString('en-US', { timeZone: TZ, hour: 'numeric', hour12: false })) % 24; }
+function fmt(iso) { return iso ? new Date(iso).toLocaleString('en-US', { timeZone: TZ, month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—'; }
+function now() { return new Date().toISOString(); }
+function emailKeyLocal(e) { return (e || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_'); }
+
+// ---------- state
+const state = { settings: null, prospects: new Map(), outbox: new Map(), replies: new Map(), optouts: new Map(), runs: [], loaded: false, tab: 'outbox', track: 'all', status: 'all' };
+const edits = new Map();      // unsaved subject/body edits per outbox id
+const openForm = new Map();   // per-card inline confirm/reject forms
+let db = null, gate = null, pendingRender = false;
+
+try { const t = localStorage.getItem('harvey-tab'); if (t) state.tab = t; } catch {}
+try { gate = await import('./gate.js'); } catch { gate = null; }
+
+function settings() { return { ...DEFAULT_SETTINGS, ...(state.settings?.data || {}) }; }
+function footer(s = settings()) {
+  return ['', s.from_name, s.role, s.website, s.mailing_address || '[mailing address not set]', '', "If you'd rather I didn't email again, just say so and I won't."].join('\n');
+}
+function optedOutEmails() { return [...state.optouts.values()].map((o) => o.email || ''); }
+function sentToday() { const d = chicagoDay(now()); return [...state.outbox.values()].filter((o) => o.status === 'sent' && chicagoDay(o.sent_at) === d).length; }
+function inQuietHours() { const h = chicagoHour(); return h >= QUIET.start || h < QUIET.end; }
+function checkFor(item) {
+  if (!gate) return null;
+  const e = edits.get(item.id) || {};
+  const p = state.prospects.get(item.prospect_id);
+  return gate.checkEmail({
+    to: item.to, subject: e.subject ?? item.subject, body: e.body ?? item.body, step: item.step, track: item.track,
+    prospectEmail: p ? (p.email || '') : undefined, optedOut: optedOutEmails(),
+  });
+}
+function sendBlockers() {
+  const s = settings(), out = [];
+  if (!s.mailing_address.trim()) out.push('Add your mailing address in Settings. US law requires it in every sales email.');
+  if (sentToday() >= Number(s.max_daily_sends || 20)) out.push(`You've sent ${sentToday()} today, the daily limit. Send more tomorrow.`);
+  if (inQuietHours()) out.push('Quiet hours (9pm to 8am Chicago). Send these in the morning.');
+  return out;
+}
+
+// ---------- writes
+async function write(fn, okMsg) {
+  try { await fn(); if (okMsg) toast(okMsg); }
+  catch (e) { toast(e?.code === 'quota_exceeded' ? 'The Desk is full. Delete old runs or rejected emails, then try again.' : `Couldn't save: ${e?.message || e?.code || 'unknown error'}`); throw e; }
+}
+async function saveEdits(item) {
+  const e = edits.get(item.id); if (!e) return;
+  await write(() => db.doc(`outbox/${item.id}`).update({ subject: e.subject ?? item.subject, body: e.body ?? item.body, edited_at: now() }), 'Saved');
+  edits.delete(item.id);
+}
+async function decide(item, status, extra = {}) {
+  const e = edits.get(item.id) || {};
+  await write(() => db.doc(`outbox/${item.id}`).update({ status, subject: e.subject ?? item.subject, body: e.body ?? item.body, decided_at: now(), ...extra }),
+    status === 'approved' ? 'Approved. It’s under Ready to send.' : status === 'rejected' ? 'Rejected. Harvey won’t send it.' : 'Moved back to review');
+  edits.delete(item.id); openForm.delete(item.id);
+}
+async function markSent(item) {
+  await write(() => db.doc(`outbox/${item.id}`).update({ status: 'sent', sent_at: now() }));
+  const p = state.prospects.get(item.prospect_id);
+  if (p) {
+    const patch = { last_contact_at: now(), updated_at: now() };
+    if (item.step !== 'reply') { patch.status = 'contacted'; patch.last_step = item.step; }
+    await write(() => db.doc(`prospects/${p.id}`).update(patch));
+  }
+  openForm.delete(item.id);
+  toast('Marked as sent');
+}
+async function optOut(email, reason, prospectId) {
+  const key = emailKeyLocal(email); if (!key) return;
+  await write(() => db.doc(`optouts/${key}`).set({ email: email.trim().toLowerCase(), reason: reason || '', prospect_id: prospectId || '', at: now() }));
+  const p = prospectId ? state.prospects.get(prospectId) : [...state.prospects.values()].find((x) => (x.email || '').toLowerCase() === email.trim().toLowerCase());
+  if (p) await write(() => db.doc(`prospects/${p.id}`).update({ status: 'opted_out', updated_at: now() }));
+  for (const o of state.outbox.values()) {
+    if ((o.to || '').toLowerCase() === email.trim().toLowerCase() && (o.status === 'pending' || o.status === 'approved')) {
+      await write(() => db.doc(`outbox/${o.id}`).update({ status: 'cancelled', decided_at: now(), note: 'Cancelled: opted out' }));
+    }
+  }
+  toast(`${email} won’t be contacted again`);
+}
+
+// ---------- rendering
+function render() {
+  const active = document.activeElement;
+  if (active && $('panel').contains(active) && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT')) { pendingRender = true; return; }
+  pendingRender = false;
+  renderStrip(); renderBanners();
+  for (const b of document.querySelectorAll('nav.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab === state.tab));
+  const panel = $('panel');
+  const view = { outbox: renderOutbox, pipeline: renderPipeline, replies: renderReplies, optouts: renderOptouts, settings: renderSettings }[state.tab] || renderOutbox;
+  panel.replaceChildren(view());
+}
+document.addEventListener('focusout', () => setTimeout(() => { if (pendingRender) render(); }, 0));
+
+function renderStrip() {
+  const ob = [...state.outbox.values()];
+  const review = ob.filter((o) => o.status === 'pending').length;
+  const ready = ob.filter((o) => o.status === 'approved').length;
+  const replies = [...state.replies.values()].filter((r) => !r.handled).length;
+  $('s-review').textContent = review; $('s-ready').textContent = ready;
+  $('s-sent').textContent = `${sentToday()} / ${settings().max_daily_sends}`;
+  $('s-replies').textContent = replies;
+  const set = (id, n, hot) => { const c = $(id); c.textContent = n; c.classList.toggle('hot', !!hot && n > 0); };
+  set('c-outbox', review + ready, true); set('c-pipeline', state.prospects.size); set('c-replies', replies, true); set('c-optouts', state.optouts.size);
+  const run = state.runs[0];
+  $('last-run').textContent = !state.loaded ? 'Loading…' : run ? `Harvey last ran ${fmt(run.at)}: ${run.summary || run.mode || ''}` : 'Harvey hasn’t run yet.';
+}
+function renderBanners() {
+  const box = $('banners'); box.replaceChildren();
+  if (!db) { box.append(el('div', { class: 'banner bad' }, el('strong', {}, 'The pipeline can’t load here.'), el('span', {}, 'Open this page in claude.ai while signed in to the account that owns it.'))); return; }
+  if (state.loaded && !settings().mailing_address.trim()) box.append(el('div', { class: 'banner warn' }, el('strong', {}, 'Sending is off until you add a mailing address.'), el('span', {}, 'US law (CAN-SPAM) requires a postal address in every sales email. A P.O. box works. Add it under Settings.')));
+  if (!gate) box.append(el('div', { class: 'banner warn' }, el('span', {}, 'The email checks didn’t load, so edits aren’t re-checked. Reload the page before approving edited emails.')));
+}
+
+function stepPill(item) { return el('span', { class: 'pill' }, STEP_LABEL[item.step] || 'Email'); }
+function trackPill(t) { return el('span', { class: `pill ${t === 'A' ? 'a' : 'b'}` }, TRACK_LABEL[t] || t || '?'); }
+
+function outboxCard(item) {
+  const p = state.prospects.get(item.prospect_id) || {};
+  const e = edits.get(item.id) || {};
+  const subject = e.subject ?? item.subject ?? '';
+  const body = e.body ?? item.body ?? '';
+  const result = checkFor(item);
+  const editable = item.status === 'pending';
+  const who = [p.contact_name, p.business].filter(Boolean).join(' · ') || item.to;
+
+  const gateBox = result === null ? el('div', { class: 'gate' }, 'Checks unavailable') : result.ok
+    ? el('div', { class: 'gate ok' }, `Passes all checks · ${result.words} words`)
+    : el('div', { class: 'gate fail' }, el('span', {}, `Fix before approving · ${result.words} words`), el('ul', {}, result.reasons.map((r) => el('li', {}, r))));
+
+  const subjectInput = el('input', { id: `subj-${item.id}`, value: subject, readonly: !editable, oninput: (ev) => { edits.set(item.id, { ...edits.get(item.id), subject: ev.target.value }); refreshGate(); } });
+  const bodyInput = el('textarea', { id: `body-${item.id}`, rows: 7, readonly: !editable, oninput: (ev) => { edits.set(item.id, { ...edits.get(item.id), body: ev.target.value }); refreshGate(); } });
+  bodyInput.value = body;
+  const gateSlot = el('div', {}, gateBox);
+  function refreshGate() {
+    const r = checkFor(item); if (!r) return;
+    gateSlot.replaceChildren(r.ok ? el('div', { class: 'gate ok' }, `Passes all checks · ${r.words} words`) : el('div', { class: 'gate fail' }, el('span', {}, `Fix before approving · ${r.words} words`), el('ul', {}, r.reasons.map((x) => el('li', {}, x)))));
+    approveBtn && (approveBtn.disabled = !r.ok);
+  }
+
+  const actions = el('div', { class: 'actions' });
+  let approveBtn = null;
+  const form = openForm.get(item.id);
+  if (item.status === 'pending') {
+    if (form === 'reject') {
+      const why = el('input', { id: `why-${item.id}`, placeholder: 'Why? Harvey reads this next run (optional)' });
+      actions.append(why,
+        el('button', { class: 'btn danger', onclick: () => decide(item, 'rejected', { reject_reason: why.value.trim() }) }, 'Reject email'),
+        el('button', { class: 'btn link', onclick: () => { openForm.delete(item.id); render(); } }, 'Cancel'));
+    } else {
+      approveBtn = el('button', { class: 'btn primary', disabled: result ? !result.ok : false, onclick: () => decide(item, 'approved') }, 'Approve');
+      actions.append(approveBtn,
+        el('button', { class: 'btn', onclick: () => saveEdits(item) }, 'Save edits'),
+        el('button', { class: 'btn danger', onclick: () => { openForm.set(item.id, 'reject'); render(); } }, 'Reject'));
+    }
+  } else if (item.status === 'approved') {
+    const s = settings();
+    const blockers = sendBlockers();
+    const full = `${item.body}\n${footer(s)}`;
+    const gmail = `https://mail.google.com/mail/?authuser=${encodeURIComponent(s.from_email)}&view=cm&fs=1&to=${encodeURIComponent(item.to)}&su=${encodeURIComponent(item.subject)}&body=${encodeURIComponent(full)}`;
+    if (blockers.length) actions.append(el('div', { class: 'note', style: 'flex-basis:100%' }, blockers.join(' ')));
+    if (form === 'sent') {
+      actions.append(el('span', { class: 'small' }, 'Did it go out from Gmail?'),
+        el('button', { class: 'btn primary', onclick: () => markSent(item) }, 'Yes, mark as sent'),
+        el('button', { class: 'btn link', onclick: () => { openForm.delete(item.id); render(); } }, 'Not yet'));
+    } else {
+      actions.append(
+        el('a', { class: 'btn primary', href: gmail, target: '_blank', rel: 'noopener', 'aria-disabled': blockers.length ? 'true' : null, tabindex: blockers.length ? '-1' : null, onclick: () => { openForm.set(item.id, 'sent'); setTimeout(render, 300); } }, `Open in Gmail as ${s.from_email}`),
+        el('button', { class: 'btn', disabled: !!blockers.length, onclick: () => copy(full, 'Email copied') }, 'Copy email'),
+        el('button', { class: 'btn', disabled: !!blockers.length, onclick: () => { openForm.set(item.id, 'sent'); render(); } }, 'Mark as sent'),
+        el('button', { class: 'btn link', onclick: () => decide(item, 'pending') }, 'Back to review'));
+    }
+  }
+
+  return el('article', { class: 'card', 'aria-label': `${STEP_LABEL[item.step] || 'Email'} to ${who}` },
+    el('div', { class: 'card-head' }, trackPill(item.track), stepPill(item), el('span', { class: 'who' }, who), p.town ? el('span', { class: 'muted small' }, p.town) : null),
+    p.signal ? el('p', { class: 'why' }, el('span', { class: 'muted' }, 'Why them: '), p.signal, ' ', p.signal_source ? link(p.signal_source, '(source)') : null) : null,
+    item.note ? el('p', { class: 'note' }, item.note) : null,
+    el('div', { class: 'fields' },
+      el('p', { class: 'small' }, el('span', { class: 'muted' }, 'To: '), el('span', { class: 'mono' }, item.to), p.email_source ? [' ', link(p.email_source, '(where we found it)')] : null),
+      el('label', { for: `subj-${item.id}` }, 'Subject', subjectInput),
+      el('label', { for: `body-${item.id}` }, 'Message', bodyInput),
+      el('div', { class: 'footer-preview', 'aria-label': 'Added to the end of every email' }, footer().trimStart())),
+    gateSlot, actions);
+}
+async function copy(text, msg) {
+  try { await navigator.clipboard.writeText(text); toast(msg); }
+  catch { toast('Copy was blocked. Select the text and copy it yourself.'); }
+}
+
+function renderOutbox() {
+  const items = [...state.outbox.values()].sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+  const pending = items.filter((o) => o.status === 'pending');
+  const approved = items.filter((o) => o.status === 'approved');
+  const recent = items.filter((o) => o.status === 'sent').sort((a, b) => (b.sent_at || '').localeCompare(a.sent_at || '')).slice(0, 10);
+  const sec = el('section', { class: 'panel', 'aria-labelledby': 'tab-outbox' });
+  if (!state.loaded) { sec.append(el('div', { class: 'empty' }, 'Loading the outbox…')); return sec; }
+  if (!pending.length && !approved.length) {
+    sec.append(el('div', { class: 'empty' }, el('h2', {}, 'Nothing waiting on you'),
+      el('p', {}, 'When Harvey writes emails they land here for you to read, edit and approve. Nothing is ever sent without you. Ask Claude to “run Harvey” for a new batch.')));
+  }
+  if (approved.length) sec.append(el('div', { class: 'group-title' }, el('h2', {}, 'Ready to send'), el('span', { class: 'muted small' }, 'Open each one in Gmail, press send there, then mark it sent here.')), ...approved.map(outboxCard));
+  if (pending.length) sec.append(el('div', { class: 'group-title' }, el('h2', {}, 'To review'), el('span', { class: 'muted small' }, 'Edit anything you like. Approve only what you’d happily sign.')), ...pending.map(outboxCard));
+  if (recent.length) {
+    sec.append(el('h2', {}, 'Recently sent'), el('div', { class: 'table-wrap' }, el('table', {},
+      el('thead', {}, el('tr', {}, el('th', {}, 'Sent'), el('th', {}, 'To'), el('th', {}, 'Subject'), el('th', {}, 'Step'))),
+      el('tbody', {}, recent.map((o) => el('tr', {}, el('td', { class: 'num' }, fmt(o.sent_at)), el('td', { class: 'mono' }, o.to), el('td', {}, o.subject), el('td', {}, STEP_LABEL[o.step] || '')))))));
+  }
+  return sec;
+}
+
+function renderPipeline() {
+  const sec = el('section', { class: 'panel', 'aria-labelledby': 'tab-pipeline' });
+  const chips = el('div', { class: 'filters' },
+    ...[['all', 'Everyone'], ['A', 'Agents'], ['B', 'Websites']].map(([k, label]) => el('button', { class: 'chip', 'aria-pressed': String(state.track === k), onclick: () => { state.track = k; render(); } }, label)),
+    el('select', { id: 'status-filter', 'aria-label': 'Filter by status', onchange: (e) => { state.status = e.target.value; render(); } },
+      el('option', { value: 'all' }, 'Any status'), PROSPECT_STATUSES.map((s) => { const o = el('option', { value: s }, s.replace('_', ' ')); if (state.status === s) o.selected = true; return o; })));
+  sec.append(chips);
+  let rows = [...state.prospects.values()];
+  if (state.track !== 'all') rows = rows.filter((p) => p.track === state.track);
+  if (state.status !== 'all') rows = rows.filter((p) => p.status === state.status);
+  rows.sort((a, b) => (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || ''));
+  if (!rows.length) {
+    sec.append(el('div', { class: 'empty' }, el('h2', {}, state.prospects.size ? 'No one matches these filters' : 'No prospects yet'),
+      el('p', {}, 'Harvey adds real estate agents and local businesses here as it finds them, each with the one specific reason it picked them.')));
+    return sec;
+  }
+  sec.append(el('div', { class: 'table-wrap' }, el('table', {},
+    el('thead', {}, el('tr', {}, ['Who', 'Town', 'Track', 'Status', 'Last contact', 'Why them', ''].map((h) => el('th', {}, h)))),
+    el('tbody', {}, rows.map((p) => {
+      const sel = el('select', { id: `st-${p.id}`, 'aria-label': `Status for ${p.business || p.email}`, disabled: p.status === 'opted_out', onchange: (e) => write(() => db.doc(`prospects/${p.id}`).update({ status: e.target.value, updated_at: now() }), 'Status updated') },
+        PROSPECT_STATUSES.filter((s) => s !== 'opted_out' || p.status === 'opted_out').map((s) => { const o = el('option', { value: s }, s.replace('_', ' ')); if (p.status === s) o.selected = true; return o; }));
+      const confirming = openForm.get(`opt-${p.id}`);
+      const optBtn = p.status === 'opted_out' || !p.email ? null : confirming
+        ? el('span', { class: 'actions' }, el('button', { class: 'btn danger', onclick: () => { openForm.delete(`opt-${p.id}`); optOut(p.email, 'Marked on the Desk', p.id); } }, 'Confirm'), el('button', { class: 'btn link', onclick: () => { openForm.delete(`opt-${p.id}`); render(); } }, 'Cancel'))
+        : el('button', { class: 'btn link', onclick: () => { openForm.set(`opt-${p.id}`, true); render(); } }, 'Opt out');
+      return el('tr', {},
+        el('td', {}, el('div', { style: 'font-weight:600' }, p.business || '—'), el('div', { class: 'small muted' }, [p.contact_name, p.role].filter(Boolean).join(', ')), p.email ? el('div', { class: 'small mono' }, p.email) : el('div', { class: 'small muted' }, 'no email')),
+        el('td', {}, p.town || ''), el('td', {}, trackPill(p.track)),
+        el('td', {}, el('span', { class: `pill ${STATUS_TONE[p.status] || ''}`, style: 'display:inline-block;margin-bottom:4px' }, (p.status || 'new').replace('_', ' ')), el('div', {}, sel)),
+        el('td', { class: 'num small' }, fmt(p.last_contact_at)),
+        el('td', { class: 'small', style: 'min-width:220px' }, p.signal || '', p.notes ? el('div', { class: 'muted' }, p.notes) : null),
+        el('td', {}, optBtn));
+    })))));
+  return sec;
+}
+
+function renderReplies() {
+  const sec = el('section', { class: 'panel', 'aria-labelledby': 'tab-replies' });
+  const contacts = [...state.prospects.values()].filter((p) => p.email && ['contacted', 'replied', 'later', 'queued'].includes(p.status)).sort((a, b) => (a.business || '').localeCompare(b.business || ''));
+  const who = el('select', { id: 'reply-who' }, el('option', { value: '' }, 'Who replied?'), contacts.map((p) => el('option', { value: p.id }, `${p.business || ''}${p.contact_name ? ` (${p.contact_name})` : ''} · ${p.email}`)));
+  const text = el('textarea', { id: 'reply-text', rows: 5, placeholder: 'Paste their reply here' });
+  const form = el('form', { class: 'card', onsubmit: async (ev) => {
+    ev.preventDefault();
+    const p = state.prospects.get(who.value); const t = text.value.trim();
+    if (!p || !t) { toast('Pick who replied and paste what they said.'); return; }
+    const optingOut = gate ? gate.isOptOut(t) : /not interested|remove me|unsubscribe|don'?t (email|contact)|no thanks|^\s*stop\s*$/i.test(t);
+    const id = `r-${p.id}-${Date.now()}`;
+    await write(() => db.doc(`replies/${id}`).set({ prospect_id: p.id, from: p.email, text: t, received_at: now(), logged_by: 'desk', intent: optingOut ? 'opt_out' : '', handled: optingOut }));
+    if (optingOut) { await optOut(p.email, 'Replied asking to stop', p.id); }
+    else {
+      await write(() => db.doc(`prospects/${p.id}`).update({ status: 'replied', updated_at: now() }));
+      for (const o of state.outbox.values()) if (o.prospect_id === p.id && o.step !== 'reply' && (o.status === 'pending' || o.status === 'approved')) await write(() => db.doc(`outbox/${o.id}`).update({ status: 'cancelled', decided_at: now(), note: 'Cancelled: they replied' }));
+      toast('Logged. Harvey will draft an answer next run.');
+    }
+    text.value = ''; who.value = ''; render();
+  } },
+    el('h2', {}, 'Log a reply'),
+    el('p', { class: 'small muted' }, 'Paste a reply from Gmail. Their follow-ups stop automatically. If it says “stop” in any form, they go on the opt-out list right away.'),
+    el('div', { class: 'row2' }, el('label', { for: 'reply-who' }, 'From', who), el('div')),
+    el('label', { for: 'reply-text' }, 'Their reply', text),
+    el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'submit' }, 'Log reply')));
+  sec.append(form);
+  const list = [...state.replies.values()].sort((a, b) => Number(!!a.handled) - Number(!!b.handled) || (b.received_at || '').localeCompare(a.received_at || ''));
+  if (!list.length) { sec.append(el('div', { class: 'empty' }, 'No replies logged yet.')); return sec; }
+  sec.append(...list.map((r) => {
+    const p = state.prospects.get(r.prospect_id) || {};
+    const tone = r.intent === 'opt_out' ? 'bad' : r.handled ? 'good' : 'hot';
+    const label = r.intent === 'opt_out' ? 'opted out' : r.handled ? (r.intent || 'answered') : 'Harvey drafts an answer next run';
+    return el('article', { class: 'card' },
+      el('div', { class: 'card-head' }, trackPill(p.track), el('span', { class: 'who' }, p.business || r.from), el('span', { class: 'muted small num' }, fmt(r.received_at)), el('span', { class: `pill ${tone}` }, label)),
+      el('p', { class: 'reply-text' }, r.text));
+  }));
+  return sec;
+}
+
+function renderOptouts() {
+  const sec = el('section', { class: 'panel', 'aria-labelledby': 'tab-optouts' });
+  const email = el('input', { id: 'opt-email', type: 'email', placeholder: 'name@business.com' });
+  const reason = el('input', { id: 'opt-reason', placeholder: 'e.g. Asked by phone' });
+  sec.append(el('form', { class: 'card', onsubmit: async (ev) => {
+    ev.preventDefault(); const v = email.value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { toast('That doesn’t look like an email address.'); return; }
+    await optOut(v, reason.value.trim()); email.value = ''; reason.value = ''; render();
+  } }, el('h2', {}, 'Never contact'), el('p', { class: 'small muted' }, 'Anyone here is skipped forever. Harvey checks this list before writing anything.'),
+    el('div', { class: 'row2' }, el('label', { for: 'opt-email' }, 'Email', email), el('label', { for: 'opt-reason' }, 'Reason', reason)),
+    el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'submit' }, 'Add to opt-outs'))));
+  const list = [...state.optouts.values()].sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+  if (list.length) sec.append(el('div', { class: 'table-wrap' }, el('table', {},
+    el('thead', {}, el('tr', {}, el('th', {}, 'Email'), el('th', {}, 'Since'), el('th', {}, 'Reason'))),
+    el('tbody', {}, list.map((o) => el('tr', {}, el('td', { class: 'mono' }, o.email), el('td', { class: 'num small' }, fmt(o.at)), el('td', { class: 'small' }, o.reason || '')))))));
+  return sec;
+}
+
+function renderSettings() {
+  const s = settings();
+  const f = {
+    from_name: el('input', { id: 'set-name', value: s.from_name }),
+    role: el('input', { id: 'set-role', value: s.role }),
+    from_email: el('input', { id: 'set-email', type: 'email', value: s.from_email }),
+    website: el('input', { id: 'set-site', value: s.website }),
+    mailing_address: el('textarea', { id: 'set-address', rows: 2, placeholder: 'Street or P.O. box, town, state, ZIP' }),
+    max_daily_sends: el('input', { id: 'set-cap', type: 'number', min: '1', max: '50', value: String(s.max_daily_sends) }),
+  };
+  f.mailing_address.value = s.mailing_address;
+  const sec = el('section', { class: 'panel', 'aria-labelledby': 'tab-settings' });
+  sec.append(el('form', { class: 'card', onsubmit: async (ev) => {
+    ev.preventDefault();
+    const data = Object.fromEntries(Object.entries(f).map(([k, n]) => [k, k === 'max_daily_sends' ? Math.max(1, Math.min(50, Number(n.value) || 20)) : n.value.trim()]));
+    await write(() => db.doc('settings/main').set({ ...data, updated_at: now() }), 'Settings saved'); render();
+  } },
+    el('h2', {}, 'Who emails go out as'),
+    el('div', { class: 'row2' }, el('label', { for: 'set-name' }, 'Name', f.from_name), el('label', { for: 'set-role' }, 'Role line', f.role)),
+    el('div', { class: 'row2' }, el('label', { for: 'set-email' }, 'Gmail account you send from', f.from_email), el('label', { for: 'set-site' }, 'Website', f.website)),
+    el('label', { for: 'set-address' }, 'Mailing address (required by law in sales emails)', f.mailing_address),
+    el('div', { class: 'row2' }, el('label', { for: 'set-cap' }, 'Most emails per day', f.max_daily_sends), el('div')),
+    el('div', { class: 'actions' }, el('button', { class: 'btn primary', type: 'submit' }, 'Save settings'))));
+  sec.append(el('div', { class: 'card' }, el('h2', {}, 'Every email ends with'), el('div', { class: 'footer-preview' }, footer().trimStart())));
+  if (state.runs.length) sec.append(el('h2', {}, 'Harvey’s recent runs'), el('div', { class: 'table-wrap' }, el('table', {},
+    el('thead', {}, el('tr', {}, el('th', {}, 'When'), el('th', {}, 'What it did'))),
+    el('tbody', {}, state.runs.map((r) => el('tr', {}, el('td', { class: 'num small' }, fmt(r.at)), el('td', { class: 'small' }, r.summary || r.mode || '')))))));
+  return sec;
+}
+
+// ---------- tabs
+for (const b of document.querySelectorAll('nav.tabs button')) b.addEventListener('click', () => {
+  state.tab = b.dataset.tab; try { localStorage.setItem('harvey-tab', state.tab); } catch {}
+  pendingRender = false; document.activeElement?.blur?.(); render();
+});
+
+// ---------- data
+function intoMap(map) { return (snap) => { map.clear(); for (const d of snap.docs) map.set(d.id, { id: d.id, ...d.data() }); state.loaded = true; render(); }; }
+function onErr(e) { if (e?.code !== 'revoked') toast(`The Desk lost its connection (${e?.code}). Reload the page.`); }
+render();
+db = window.claude?.use ? await window.claude.use('db') : null;
+if (!db) { state.loaded = true; render(); }
+else {
+  db.doc('settings/main').onSnapshot((d) => { state.settings = d.exists ? { data: d.data() } : null; state.loaded = true; render(); }, onErr);
+  db.collection('prospects').onSnapshot(intoMap(state.prospects), onErr);
+  db.collection('outbox').onSnapshot(intoMap(state.outbox), onErr);
+  db.collection('replies').onSnapshot(intoMap(state.replies), onErr);
+  db.collection('optouts').onSnapshot(intoMap(state.optouts), onErr);
+  db.collection('runs').orderBy('at', 'desc').limit(15).onSnapshot((snap) => { state.runs = snap.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, onErr);
+}
+</script>
