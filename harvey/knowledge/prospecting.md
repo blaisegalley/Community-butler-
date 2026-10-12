@@ -53,7 +53,7 @@ Barrington and nearby.
 | `email` / `email_source` | the address and the URL it was published on |
 | `website` | their site, if any |
 | `town` | e.g. "Palatine" |
-| `signal` | the one specific, true thing the first email will mention |
+| `signal` | the specific, true reason Harvey picked them. It stays on the Desk for Blaise; the email only alludes to it in general terms (see writing.md) |
 | `signal_source` | the URL that shows it |
 | `status` | `new` |
 | `notes` | anything Blaise should know; keep it short and factual |

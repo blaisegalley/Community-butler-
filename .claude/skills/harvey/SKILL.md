@@ -110,7 +110,9 @@ Find up to `usage.max_new_prospects_per_run` new prospects following
 `prospecting.md`. Aim for a mix of Track A and Track B unless Blaise asked for
 one. Skip anyone already on the Desk (match email and business name) or
 opted out. Read each prospect's actual pages: the signal must come from
-something you saw.
+something you saw. The email itself stays general (writing.md, "Don't sound
+like you've been watching them"): no addresses, listing statuses, posts or
+congratulations.
 
 For each prospect with an email: write email 1 following `writing.md`, run the
 gate, fix until it passes, then write the prospect (status `queued`) and its

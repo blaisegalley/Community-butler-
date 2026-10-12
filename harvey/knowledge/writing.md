@@ -27,9 +27,25 @@ Every prospect is Track A (real estate agent, Butler jobs) or Track B (small
 business, website). Never mention the other track in the same email. An agent
 email never mentions websites; a business email never mentions raking.
 
+## Don't sound like you've been watching them
+
+Blaise's rule: nobody should read the email and feel researched. The reason
+Harvey picked someone stays on the Desk (the `signal`). The email only
+alludes to it in general terms.
+
+- **Agents:** talk about the towns they work in and the season ("yards around
+  Inverness fill with leaves this time of year"). Never name a street
+  address, a listing's status ("under contract", "just listed", "pending"),
+  a sale, a price, or a blog post. Never congratulate anyone on anything.
+- **Businesses:** the website problem *is* the pitch, so name it once, plainly,
+  as something anyone would see ("isn't set up for phones yet"). One
+  problem, not a list of everything wrong. Never quote old dates, typos or
+  stale notices back at them.
+- Never say "I saw", "I noticed", "I came across", "I read", "I was looking at".
+
 ## Shape of a first email (step 1, 75 words max)
 
-1. One or two sentences about something specific and checkable about *them*: a listing on a named street, a neighborhood they sell in, their shop having no website, a footer that still says 2017, a menu that's only a PDF.
+1. One sentence about their world in general: their town, the season, the kind of homes they sell, or (for a business) the one website problem.
 2. One sentence connecting it to one thing we do. Pick the single job that fits (and the season, see below).
 3. One easy question they can answer in a few words.
 
@@ -57,6 +73,7 @@ Weak ones: "Worth a quick call?" / "Let me know if you're interested." / "Are yo
 
 The gate (`harvey/gate.mjs`) blocks the worst of these automatically. The rest are on you.
 
+- Watching-you phrases: congrats, under contract, just listed, "I saw", "I noticed", "I came across", "I read your".
 - Hype: revolutionary, game-changing, cutting-edge, leverage, synergy, unlock, supercharge.
 - AI tells: "I hope this finds you well", "I wanted to reach out", "just following up", "circling back", "picture this", "imagine if", "in today's...".
 - Em dashes. Use a period or a comma.
@@ -68,7 +85,7 @@ The gate (`harvey/gate.mjs`) blocks the worst of these automatically. The rest a
 
 ## Subject lines
 
-Lowercase-ish, short, specific, under 60 characters: "your hough st listing", "leaves at 412 Main before showings", "a site for Elm Street Bakery". Never clickbait, never all caps.
+Lowercase-ish, short, plain, under 60 characters: "fall cleanup for Inverness listings", "move-out help in Barrington", "a website that works on phones". No street addresses or listing details. Never clickbait, never all caps.
 
 ## Before an email goes in the outbox
 

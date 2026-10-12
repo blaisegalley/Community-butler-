@@ -5,8 +5,8 @@ import { checkEmail, isOptOut, emailKey } from './gate.mjs';
 
 const good = {
   to: 'jane@northshorehomes.com',
-  subject: 'Your Hough St listing',
-  body: 'Saw the new listing on Hough St go up this week. The front beds have a lot of leaves in them right now. A couple of us from Barrington High could rake and bag the yard before your first showing weekend. Want me to send over what that would look like?',
+  subject: 'fall cleanup for Barrington listings',
+  body: 'Yards around Barrington fill up with leaves this time of year, usually right between one showing and the next. A couple of us from Barrington High could rake and bag a yard on short notice. Want me to send over what that would look like?',
   step: 1,
   track: 'A',
 };
@@ -46,6 +46,12 @@ test('catches placeholders, hype words, fake replies and formatting', () => {
   assert.match(all, /fakes a reply/);
   assert.match(all, /exclamation marks/);
   assert.match(all, /bullets/);
+});
+
+test("blocks phrases that sound like we've been watching them", () => {
+  for (const line of ['Congrats on getting it under contract.', 'I saw your new listing.', 'Read your post on older homes.']) {
+    assert.match(checkEmail({ ...good, body: `${line} ${good.body}` }).reasons.join(), /banned phrases/, line);
+  }
 });
 
 test('first email has no links; later ones get at most one', () => {

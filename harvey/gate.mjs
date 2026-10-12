@@ -23,6 +23,9 @@ export const BANNED_PHRASES = [
   'game-changer', 'game changer', 'game-changing', 'revolutionary', 'revolutionize',
   'cutting-edge', 'leverage', 'synergy', 'unlock', 'supercharge', 'no pressure',
   'as an ai', "i'm an ai", 'i am an ai', 'language model',
+  // Phrases that make it sound like we've been watching them (writing.md).
+  'congrats', 'under contract', 'just listed', 'your listing at', 'i saw', 'i noticed',
+  'came across', 'i read your', 'read your post', 'saw your', 'was looking at your',
 ];
 
 // Opt-out wording. Any of these in a reply means stop, permanently.
