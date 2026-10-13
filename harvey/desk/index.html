@@ -360,6 +360,7 @@ function outboxCard(item) {
     item.note ? el('p', { class: 'note' }, item.note) : null,
     el('div', { class: 'fields' },
       el('p', { class: 'small' }, el('span', { class: 'muted' }, 'To: '), el('span', { class: 'mono' }, item.to), p.email_source ? [' ', link(p.email_source, '(where we found it)')] : null),
+      p.phone ? el('p', { class: 'small' }, el('span', { class: 'muted' }, 'Phone: '), el('span', { class: 'mono' }, p.phone), ' ', el('button', { type: 'button', class: 'btn link', onclick: () => copy(p.phone, 'Number copied') }, 'Copy')) : null,
       el('label', { for: `subj-${item.id}` }, 'Subject', subjectInput),
       el('label', { for: `body-${item.id}` }, 'Message', bodyInput),
       el('div', { class: 'footer-preview', 'aria-label': 'Added to the end of every email' }, footer().trimStart())),
@@ -394,12 +395,13 @@ function renderOutbox() {
 function renderPipeline() {
   const sec = el('section', { class: 'panel', 'aria-labelledby': 'tab-pipeline' });
   const chips = el('div', { class: 'filters' },
-    ...[['all', 'Everyone'], ['A', 'Agents'], ['B', 'Websites']].map(([k, label]) => el('button', { class: 'chip', 'aria-pressed': String(state.track === k), onclick: () => { state.track = k; render(); } }, label)),
+    ...[['all', 'Everyone'], ['A', 'Agents & moving'], ['B', 'Websites'], ['call', 'Call list']].map(([k, label]) => el('button', { class: 'chip', 'aria-pressed': String(state.track === k), onclick: () => { state.track = k; render(); } }, label)),
     el('select', { id: 'status-filter', 'aria-label': 'Filter by status', onchange: (e) => { state.status = e.target.value; render(); } },
       el('option', { value: 'all' }, 'Any status'), PROSPECT_STATUSES.map((s) => { const o = el('option', { value: s }, s.replace('_', ' ')); if (state.status === s) o.selected = true; return o; })));
   sec.append(chips);
   let rows = [...state.prospects.values()];
-  if (state.track !== 'all') rows = rows.filter((p) => p.track === state.track);
+  if (state.track === 'call') rows = rows.filter((p) => p.phone && p.status !== 'opted_out');
+  else if (state.track !== 'all') rows = rows.filter((p) => p.track === state.track);
   if (state.status !== 'all') rows = rows.filter((p) => p.status === state.status);
   rows.sort((a, b) => (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || ''));
   if (!rows.length) {
@@ -417,7 +419,8 @@ function renderPipeline() {
         ? el('span', { class: 'actions' }, el('button', { class: 'btn danger', onclick: () => { openForm.delete(`opt-${p.id}`); optOut(p.email, 'Marked on the Desk', p.id); } }, 'Confirm'), el('button', { class: 'btn link', onclick: () => { openForm.delete(`opt-${p.id}`); render(); } }, 'Cancel'))
         : el('button', { class: 'btn link', onclick: () => { openForm.set(`opt-${p.id}`, true); render(); } }, 'Opt out');
       return el('tr', {},
-        el('td', {}, el('div', { style: 'font-weight:600' }, p.business || '—'), el('div', { class: 'small muted' }, [p.contact_name, p.role].filter(Boolean).join(', ')), p.email ? el('div', { class: 'small mono' }, p.email) : el('div', { class: 'small muted' }, 'no email')),
+        el('td', {}, el('div', { style: 'font-weight:600' }, p.business || '—'), el('div', { class: 'small muted' }, [p.contact_name, p.role].filter(Boolean).join(', ')), p.email ? el('div', { class: 'small mono' }, p.email) : el('div', { class: 'small muted' }, 'no email'),
+          p.phone ? el('div', { class: 'small mono' }, p.phone, ' ', el('button', { type: 'button', class: 'btn link', onclick: () => copy(p.phone, 'Number copied') }, 'Copy')) : null),
         el('td', {}, p.town || ''), el('td', {}, trackPill(p.track)),
         el('td', {}, el('span', { class: `pill ${STATUS_TONE[p.status] || ''}`, style: 'display:inline-block;margin-bottom:4px' }, (p.status || 'new').replace('_', ' ')), el('div', {}, sel)),
         el('td', { class: 'num small' }, fmt(p.last_contact_at)),

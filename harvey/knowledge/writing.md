@@ -68,6 +68,7 @@ Weak ones: "Worth a quick call?" / "Let me know if you're interested." / "Are yo
 - December to March: snow shoveling for vacant or listed homes, walkways clear for showings.
 - April to June: power washing (see the note in product_knowledge.md), weeding, mowing, yard prep.
 - Any time: moving help, junk hauling and cleanouts for estate or vacant listings.
+- Any time, for stagers, offices, furniture shops and estate sales: small and medium furniture moves (chairs, desks, dressers). Say "carry", "load" and "set in place", never "deliver" or "drive".
 
 ## Words and habits that never appear
 

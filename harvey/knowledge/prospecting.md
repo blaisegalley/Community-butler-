@@ -16,6 +16,22 @@ Barrington and nearby.
 - Recent listings in those towns: the listing page names the agent.
 - Good signals: an active listing (especially vacant, estate or "as-is"), a listing with a visible yard or long driveway, a new listing coming into fall or winter, an agent who clearly works these specific towns.
 
+**Track A (moving help): businesses that need small and medium furniture moves**
+in the same towns. These are Butler jobs like chairs, desks, side tables,
+dressers and boxes: a few pieces, not a whole house. Look for:
+- Home stagers and professional organizers (staging days mean carrying furniture).
+- Office furniture dealers and small offices (desks and chairs moved between rooms, old chairs cleared out). Pitch the small jobs their install crews skip.
+- Furniture stores where customers pick up their own orders (help carrying it in at home).
+- Estate sale companies (carry-out help for buyers, setup before a sale).
+- Furniture consignment and resale shops (buyers need help getting pieces home).
+- Interior designers who rearrange existing furniture.
+- Sources: the Barrington, Palatine and Arlington Heights chamber directories ("Home & Garden", "Shopping & Specialty Retail", "Real Estate, Moving & Storage", "Business & Professional Services"), plus estatesales.org for estate sale companies.
+- Skip moving companies, senior move managers that run their own crews, and stores that already deliver everywhere. They're competitors, not customers.
+- Never promise to drive furniture anywhere. Pitch carrying, loading, unloading and setting pieces in place. Butlers do small and medium jobs; anything bigger belongs with a moving company (see competitive_intel.md).
+
+Each run, aim for roughly a third agents, a third moving-help businesses and a
+third Track B websites, unless Blaise asks for something else.
+
 **Track B: small local businesses** in the same towns.
 - Map listings, the local chamber of commerce member directory, village business directories.
 - Good signals (state only what you actually saw):
@@ -42,6 +58,13 @@ Barrington and nearby.
 - A general business inbox (info@, hello@) is fine for Track B.
 - If there's only a contact form, add the prospect with no email and status `skip`, note "contact form only" so Blaise can decide.
 
+## Phone numbers
+
+- Record the phone number the business or agent publishes for customers: on their own site (a `tel:` link or the contact page), their brokerage profile, or their chamber listing. For agents, the number on their own site is their business line even when it's a cell.
+- Never look up home numbers or use people-search or paid lookup sites.
+- Write it as (847) 555-0123.
+- Prospects with a phone but no email are still worth recording (status `skip`, note "call or visit"). Those are Blaise's call list.
+
 ## What to record (one Desk prospect per person or business)
 
 | field | what goes in it |
@@ -51,6 +74,7 @@ Barrington and nearby.
 | `contact_name` | person's name if published, else empty |
 | `role` | e.g. "Realtor", "Owner" |
 | `email` / `email_source` | the address and the URL it was published on |
+| `phone` / `phone_source` | the business phone they publish and the URL it's on, so Blaise can call. Record it even when there's no email |
 | `website` | their site, if any |
 | `town` | e.g. "Palatine" |
 | `signal` | the specific, true reason Harvey picked them. It stays on the Desk for Blaise; the email only alludes to it in general terms (see writing.md) |

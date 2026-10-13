@@ -48,7 +48,7 @@ Use the `ArtifactData` tool with `url` = `desk.url`. Collections:
 | collection | doc id | fields |
 |---|---|---|
 | `settings` | `main` | `from_name, role, from_email, website, mailing_address, max_daily_sends` |
-| `prospects` | `p-<slug of business>-<slug of contact or town>` | `track` (A/B), `business, contact_name, role, email, email_source, website, town, signal, signal_source, status, notes, created_at, updated_at, last_contact_at, last_step, next_step_at` |
+| `prospects` | `p-<slug of business>-<slug of contact or town>` | `track` (A/B), `business, contact_name, role, email, email_source, phone, phone_source, website, town, signal, signal_source, status, notes, created_at, updated_at, last_contact_at, last_step, next_step_at` |
 | `outbox` | `o-<prospect id>-<step>` (replies: `o-<prospect id>-r<n>`) | `prospect_id, to, track, step` (1, 2, 3 or `"reply"`), `subject, body, status, note, created_at` (+ `decided_at, sent_at, reject_reason, in_reply_to` set by the Desk) |
 | `replies` | set by the Desk | `prospect_id, from, text, received_at, intent, handled, logged_by` |
 | `optouts` | email with every non-alphanumeric character as `_`, lowercased | `email, reason, prospect_id, at` |
@@ -107,8 +107,10 @@ Follow-ups reuse email 1's subject exactly and add one new useful thing.
 ### 4. New prospects and first emails
 
 Find up to `usage.max_new_prospects_per_run` new prospects following
-`prospecting.md`. Aim for a mix of Track A and Track B unless Blaise asked for
-one. Skip anyone already on the Desk (match email and business name) or
+`prospecting.md`. Aim for a mix of real estate agents, businesses that need
+small and medium furniture moves (both Track A), and Track B websites, unless
+Blaise asked for one. If many emails are already waiting for Blaise's review,
+write a smaller batch. Skip anyone already on the Desk (match email and business name) or
 opted out. Read each prospect's actual pages: the signal must come from
 something you saw. The email itself stays general (writing.md, "Don't sound
 like you've been watching them"): no addresses, listing statuses, posts or
