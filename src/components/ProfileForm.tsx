@@ -47,9 +47,6 @@ export default function ProfileForm({
   );
   const [photo, setPhoto] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
-  const [consent, setConsent] = useState(profile?.guardianConsent ?? false);
-  const [guardianName, setGuardianName] = useState(profile?.guardianName ?? '');
-  const [guardianContact, setGuardianContact] = useState(profile?.guardianContact ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -79,9 +76,10 @@ export default function ProfileForm({
         displayName,
         photo,
         removePhoto,
-        guardianConsent: consent,
-        guardianName,
-        guardianContact,
+        // No longer asked for; whatever is already on file is kept as is.
+        guardianConsent: profile?.guardianConsent ?? false,
+        guardianName: profile?.guardianName ?? '',
+        guardianContact: profile?.guardianContact ?? '',
       });
       setOpen(false);
       onSubmitted();
@@ -223,28 +221,6 @@ export default function ProfileForm({
                 Remove my photo
               </label>
             )}
-          </div>
-
-          <div className={`${fieldWrap} rounded-[10px] bg-sand border border-black/10 p-3.5`}>
-            <label className="flex items-start gap-2 text-[13.5px] text-ink">
-              <input type="checkbox" required checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-[3px]" />
-              <span>
-                A parent or guardian has agreed to my photo and first name being shown publicly on this website.
-              </span>
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-              <div>
-                <label className={labelClass} htmlFor="pf-gname">Their name</label>
-                <input id="pf-gname" required className={inputClass} value={guardianName} onChange={(e) => setGuardianName(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="pf-gcontact">Their phone or email</label>
-                <input id="pf-gcontact" required className={inputClass} value={guardianContact} onChange={(e) => setGuardianContact(e.target.value)} />
-              </div>
-            </div>
-            <p className="text-[12px] text-black/45 mt-2">
-              A manager may check this before approving. It is never shown on the site.
-            </p>
           </div>
 
           <div className="flex gap-2">
