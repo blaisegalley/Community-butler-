@@ -7,7 +7,8 @@
 //   node harvey/gate.mjs '{"to":"a@b.com","subject":"...","body":"...","step":1,"track":"A"}'
 //
 // It prints the result as JSON and exits 1 if anything failed. Pass a JSON
-// array to check several emails at once.
+// array to check several emails at once. Add "kind":"text" to check a text
+// message (body + track) instead of an email.
 
 export const WORD_LIMITS = { 1: 75, 2: 60, 3: 40, reply: 150 };
 export const MAX_SUBJECT = 60;
@@ -124,6 +125,38 @@ export function checkEmail(email) {
   return { ok: reasons.length === 0, reasons, words };
 }
 
+export const TEXT_WORD_LIMIT = 55;
+const STOP_LINE_RE = /reply stop/i;
+
+/**
+ * Checks a text message Blaise will send by hand from his phone.
+ * @param {{body: string, track: 'A'|'B'}} text
+ * @returns {{ok: boolean, reasons: string[], words: number}}
+ */
+export function checkText(text) {
+  const reasons = [];
+  const body = (text.body || '').trim();
+  const words = countWords(body);
+  if (!body) reasons.push('text is empty');
+  if (words > TEXT_WORD_LIMIT) reasons.push(`text is ${words} words (max ${TEXT_WORD_LIMIT})`);
+  if (!/community butler/i.test(body)) reasons.push('text must say it is from Community Butler');
+  if (!STOP_LINE_RE.test(body)) reasons.push('text must end with a way to opt out ("Reply STOP and I won\'t text again.")');
+  const tag = body.match(MERGE_TAG_RE);
+  if (tag) reasons.push(`unfilled placeholder: ${tag[0]}`);
+  const lowered = body.toLowerCase();
+  const hits = BANNED_PHRASES.filter((p) => lowered.includes(p));
+  if (hits.length) reasons.push(`banned phrases: ${hits.slice(0, 3).join(', ')}`);
+  if (body.includes('—')) reasons.push('uses an em dash (reads as AI-written)');
+  if (URL_RE.test(body)) reasons.push('texts must not contain links');
+  URL_RE.lastIndex = 0;
+  const prices = [...body.matchAll(DOLLAR_RE)].map((m) => Number(m[1].replace(/,/g, '')));
+  if (text.track === 'A' && prices.length) reasons.push('agent texts must not quote prices');
+  if (text.track === 'B' && prices.some((p) => p < WEBSITE_PRICE.min || p > WEBSITE_PRICE.max)) {
+    reasons.push('price is outside the $700 to $1,250 website range');
+  }
+  return { ok: reasons.length === 0, reasons, words };
+}
+
 // Command-line use. Skipped when the Desk imports this file in a browser.
 const isCli = typeof process !== 'undefined' && process.argv?.[1] && import.meta.url === new URL(`file://${process.argv[1]}`).href;
 if (isCli) {
@@ -135,7 +168,7 @@ if (isCli) {
   };
   const input = JSON.parse(await read());
   const list = Array.isArray(input) ? input : [input];
-  const results = list.map((e) => ({ to: e.to, ...checkEmail(e) }));
+  const results = list.map((e) => (e.kind === 'text' ? { to: e.to, kind: 'text', ...checkText(e) } : { to: e.to, ...checkEmail(e) }));
   console.log(JSON.stringify(Array.isArray(input) ? results : results[0], null, 2));
   process.exit(results.every((r) => r.ok) ? 0 : 1);
 }

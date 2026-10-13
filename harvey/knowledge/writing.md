@@ -70,6 +70,21 @@ Weak ones: "Worth a quick call?" / "Let me know if you're interested." / "Are yo
 - Any time: moving help, junk hauling and cleanouts for estate or vacant listings.
 - Any time, for stagers, offices, furniture shops and estate sales: small and medium furniture moves (chairs, desks, dressers). Say "carry", "load" and "set in place", never "deliver" or "drive".
 
+## Text messages (Blaise sends them by hand)
+
+For prospects whose published number is an agent's or owner's own line,
+Harvey also writes a short text version of the first email, stored as `text`
+on the same outbox item. Blaise copies it into Messages and sends it himself.
+Nothing is ever texted automatically.
+
+- 55 words max. Plain, friendly, no links.
+- Say who it's from in the first sentence: "this is Blaise from Community Butler, a group of Barrington High students".
+- One offer, one easy question, same rules as the email (no addresses, no "I saw", no congrats, no prices to agents).
+- Always end with: "Reply STOP and I won't text again."
+- Only for agents and small owner-run businesses whose number looks like a direct line. Skip main office lines, restaurants and shops: call those instead.
+- A text and an email to the same person are alternatives. Blaise picks one; don't send both the same day.
+- Check it with the gate: `node harvey/gate.mjs '{"kind":"text","track":"A","body":"..."}'`.
+
 ## Words and habits that never appear
 
 The gate (`harvey/gate.mjs`) blocks the worst of these automatically. The rest are on you.

@@ -23,7 +23,7 @@ be set up (see `harvey/README.md`).
 
 ## Hard rules
 
-1. **Nothing sends.** Never call a Gmail send tool. Never write a draft into a Gmail
+1. **Nothing sends.** Never call a Gmail send tool, and never send a text message. Blaise sends every email and text himself. Never write a draft into a Gmail
    account other than `channels.email.gmail_drafts_mailbox` (see step 5).
 2. **Opt-outs are permanent.** Read the Desk's `optouts` before writing anything.
    Never write to, re-add, or find a new address for anyone on it.
@@ -49,7 +49,7 @@ Use the `ArtifactData` tool with `url` = `desk.url`. Collections:
 |---|---|---|
 | `settings` | `main` | `from_name, role, from_email, website, mailing_address, max_daily_sends` |
 | `prospects` | `p-<slug of business>-<slug of contact or town>` | `track` (A/B), `business, contact_name, role, email, email_source, phone, phone_source, website, town, signal, signal_source, status, notes, created_at, updated_at, last_contact_at, last_step, next_step_at` |
-| `outbox` | `o-<prospect id>-<step>` (replies: `o-<prospect id>-r<n>`) | `prospect_id, to, track, step` (1, 2, 3 or `"reply"`), `subject, body, status, note, created_at` (+ `decided_at, sent_at, reject_reason, in_reply_to` set by the Desk) |
+| `outbox` | `o-<prospect id>-<step>` (replies: `o-<prospect id>-r<n>`) | `prospect_id, to, track, step` (1, 2, 3 or `"reply"`), `subject, body, text` (optional text-message version, see writing.md), `status, note, created_at` (+ `texted_at` set by the Desk) (+ `decided_at, sent_at, reject_reason, in_reply_to` set by the Desk) |
 | `replies` | set by the Desk | `prospect_id, from, text, received_at, intent, handled, logged_by` |
 | `optouts` | email with every non-alphanumeric character as `_`, lowercased | `email, reason, prospect_id, at` |
 | `runs` | `run-<ISO timestamp, colons as ->` | `at, mode, summary` |
@@ -117,7 +117,8 @@ like you've been watching them"): no addresses, listing statuses, posts or
 congratulations.
 
 For each prospect with an email: write email 1 following `writing.md`, run the
-gate, fix until it passes, then write the prospect (status `queued`) and its
+gate, fix until it passes. If the prospect has a direct phone line (an agent or a
+small owner), also write the `text` version and gate it with `"kind":"text"`. Then write the prospect (status `queued`) and its
 outbox item (status `pending`) in one batch. Prospects with no published
 email are recorded with status `skip` and a note.
 

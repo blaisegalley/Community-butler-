@@ -1,7 +1,7 @@
 // Run with: npm run test:harvey
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkEmail, isOptOut, emailKey } from './gate.mjs';
+import { checkEmail, checkText, isOptOut, emailKey } from './gate.mjs';
 
 const good = {
   to: 'jane@northshorehomes.com',
@@ -76,4 +76,19 @@ test('recognises opt-out replies but not ordinary ones', () => {
 
 test('emailKey makes a safe document id', () => {
   assert.equal(emailKey(' Jane.Doe+x@Shop.com '), 'jane_doe_x_shop_com');
+});
+
+test('a short text with who it is from and a way to opt out passes', () => {
+  const body = "Hi Kim, this is Blaise from Community Butler, a group of Barrington High students. We rake and bag yards on short notice this fall. Want details? Reply STOP and I won't text again.";
+  const r = checkText({ body, track: 'A' });
+  assert.equal(r.ok, true, r.reasons.join('; '));
+});
+
+test('texts need the sender, an opt-out, no links and no long rambling', () => {
+  const r = checkText({ body: `Hi Kim, want help raking? https://thecommunitybutler.com ${'word '.repeat(60)}`, track: 'A' });
+  const all = r.reasons.join(' | ');
+  assert.match(all, /Community Butler/);
+  assert.match(all, /opt out/);
+  assert.match(all, /links/);
+  assert.match(all, /max 55/);
 });

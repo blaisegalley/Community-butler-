@@ -213,6 +213,16 @@ function checkFor(item) {
     prospectEmail: p ? (p.email || '') : undefined, optedOut: optedOutEmails(),
   });
 }
+function textCheckFor(item) {
+  const e = edits.get(item.id) || {};
+  const text = e.text ?? item.text;
+  if (!text || !gate?.checkText) return null;
+  return gate.checkText({ body: text, track: item.track });
+}
+function gateLine(r, label) {
+  return r.ok ? el('div', { class: 'gate ok' }, `${label}: passes all checks · ${r.words} words`)
+    : el('div', { class: 'gate fail' }, el('span', {}, `${label}: fix before approving · ${r.words} words`), el('ul', {}, r.reasons.map((x) => el('li', {}, x))));
+}
 function sendBlockers() {
   const s = settings(), out = [];
   if (!s.mailing_address.trim()) out.push('Add your mailing address in Settings. US law requires it in every sales email.');
@@ -228,17 +238,17 @@ async function write(fn, okMsg) {
 }
 async function saveEdits(item) {
   const e = edits.get(item.id); if (!e) return;
-  await write(() => db.doc(`outbox/${item.id}`).update({ subject: e.subject ?? item.subject, body: e.body ?? item.body, edited_at: now() }), 'Saved');
+  await write(() => db.doc(`outbox/${item.id}`).update({ subject: e.subject ?? item.subject, body: e.body ?? item.body, ...(e.text !== undefined ? { text: e.text } : {}), edited_at: now() }), 'Saved');
   edits.delete(item.id);
 }
 async function decide(item, status, extra = {}) {
   const e = edits.get(item.id) || {};
-  await write(() => db.doc(`outbox/${item.id}`).update({ status, subject: e.subject ?? item.subject, body: e.body ?? item.body, decided_at: now(), ...extra }),
+  await write(() => db.doc(`outbox/${item.id}`).update({ status, subject: e.subject ?? item.subject, body: e.body ?? item.body, ...(e.text !== undefined ? { text: e.text } : {}), decided_at: now(), ...extra }),
     status === 'approved' ? 'Approved. It’s under Ready to send.' : status === 'rejected' ? 'Rejected. Harvey won’t send it.' : 'Moved back to review');
   edits.delete(item.id); openForm.delete(item.id);
 }
-async function markSent(item) {
-  await write(() => db.doc(`outbox/${item.id}`).update({ status: 'sent', sent_at: now() }));
+async function markSent(item, channel = 'email') {
+  await write(() => db.doc(`outbox/${item.id}`).update({ status: 'sent', sent_at: now(), channel, ...(channel === 'text' ? { texted_at: now() } : {}) }));
   const p = state.prospects.get(item.prospect_id);
   if (p) {
     const patch = { last_contact_at: now(), updated_at: now() };
@@ -246,7 +256,7 @@ async function markSent(item) {
     await write(() => db.doc(`prospects/${p.id}`).update(patch));
   }
   openForm.delete(item.id);
-  toast('Marked as sent');
+  toast(channel === 'text' ? 'Marked as texted' : 'Marked as sent');
 }
 async function optOut(email, reason, prospectId) {
   const key = emailKeyLocal(email); if (!key) return;
@@ -313,11 +323,16 @@ function outboxCard(item) {
   const subjectInput = el('input', { id: `subj-${item.id}`, value: subject, readonly: !editable, oninput: (ev) => { edits.set(item.id, { ...edits.get(item.id), subject: ev.target.value }); refreshGate(); } });
   const bodyInput = el('textarea', { id: `body-${item.id}`, rows: 7, readonly: !editable, oninput: (ev) => { edits.set(item.id, { ...edits.get(item.id), body: ev.target.value }); refreshGate(); } });
   bodyInput.value = body;
-  const gateSlot = el('div', {}, gateBox);
+  const textValue = e.text ?? item.text ?? '';
+  const textInput = item.text ? el('textarea', { id: `text-${item.id}`, rows: 3, readonly: !editable, oninput: (ev) => { edits.set(item.id, { ...edits.get(item.id), text: ev.target.value }); refreshGate(); } }) : null;
+  if (textInput) textInput.value = textValue;
+  const tr = textCheckFor(item);
+  const gateSlot = el('div', { class: 'fields' }, gateBox, tr ? gateLine(tr, 'Text') : null);
   function refreshGate() {
     const r = checkFor(item); if (!r) return;
-    gateSlot.replaceChildren(r.ok ? el('div', { class: 'gate ok' }, `Passes all checks · ${r.words} words`) : el('div', { class: 'gate fail' }, el('span', {}, `Fix before approving · ${r.words} words`), el('ul', {}, r.reasons.map((x) => el('li', {}, x)))));
-    approveBtn && (approveBtn.disabled = !r.ok);
+    const t = textCheckFor(item);
+    gateSlot.replaceChildren(r.ok ? el('div', { class: 'gate ok' }, `Passes all checks · ${r.words} words`) : el('div', { class: 'gate fail' }, el('span', {}, `Fix before approving · ${r.words} words`), el('ul', {}, r.reasons.map((x) => el('li', {}, x)))), t ? gateLine(t, 'Text') : null);
+    approveBtn && (approveBtn.disabled = !r.ok || (t && !t.ok));
   }
 
   const actions = el('div', { class: 'actions' });
@@ -330,7 +345,7 @@ function outboxCard(item) {
         el('button', { class: 'btn danger', onclick: () => decide(item, 'rejected', { reject_reason: why.value.trim() }) }, 'Reject email'),
         el('button', { class: 'btn link', onclick: () => { openForm.delete(item.id); render(); } }, 'Cancel'));
     } else {
-      approveBtn = el('button', { class: 'btn primary', disabled: result ? !result.ok : false, onclick: () => decide(item, 'approved') }, 'Approve');
+      approveBtn = el('button', { class: 'btn primary', disabled: (result ? !result.ok : false) || (tr ? !tr.ok : false), onclick: () => decide(item, 'approved') }, 'Approve');
       actions.append(approveBtn,
         el('button', { class: 'btn', onclick: () => saveEdits(item) }, 'Save edits'),
         el('button', { class: 'btn danger', onclick: () => { openForm.set(item.id, 'reject'); render(); } }, 'Reject'));
@@ -341,7 +356,11 @@ function outboxCard(item) {
     const full = `${item.body}\n${footer(s)}`;
     const gmail = `https://mail.google.com/mail/?authuser=${encodeURIComponent(s.from_email)}&view=cm&fs=1&to=${encodeURIComponent(item.to)}&su=${encodeURIComponent(item.subject)}&body=${encodeURIComponent(full)}`;
     if (blockers.length) actions.append(el('div', { class: 'note', style: 'flex-basis:100%' }, blockers.join(' ')));
-    if (form === 'sent') {
+    if (form === 'texted') {
+      actions.append(el('span', { class: 'small' }, `Did you text ${p.phone}?`),
+        el('button', { class: 'btn primary', onclick: () => markSent(item, 'text') }, 'Yes, mark as texted'),
+        el('button', { class: 'btn link', onclick: () => { openForm.delete(item.id); render(); } }, 'Not yet'));
+    } else if (form === 'sent') {
       actions.append(el('span', { class: 'small' }, 'Did it go out from Gmail?'),
         el('button', { class: 'btn primary', onclick: () => markSent(item) }, 'Yes, mark as sent'),
         el('button', { class: 'btn link', onclick: () => { openForm.delete(item.id); render(); } }, 'Not yet'));
@@ -351,6 +370,13 @@ function outboxCard(item) {
         el('button', { class: 'btn', disabled: !!blockers.length, onclick: () => copy(full, 'Email copied') }, 'Copy email'),
         el('button', { class: 'btn', disabled: !!blockers.length, onclick: () => { openForm.set(item.id, 'sent'); render(); } }, 'Mark as sent'),
         el('button', { class: 'btn link', onclick: () => decide(item, 'pending') }, 'Back to review'));
+      if (item.text && p.phone) {
+        const textBlocked = blockers.filter((b) => !b.startsWith('Add your mailing address')).length > 0;
+        actions.append(el('div', { class: 'small muted', style: 'flex-basis:100%' }, 'Or text instead (not both the same day):'),
+          el('button', { class: 'btn', disabled: textBlocked, onclick: () => copy(item.text, `Text copied. Send it to ${p.phone} from Messages.`) }, 'Copy text'),
+          el('button', { class: 'btn', disabled: textBlocked, onclick: () => copy(p.phone, 'Number copied') }, `Copy ${p.phone}`),
+          el('button', { class: 'btn', disabled: textBlocked, onclick: () => { openForm.set(item.id, 'texted'); render(); } }, 'Mark texted'));
+      }
     }
   }
 
@@ -363,7 +389,8 @@ function outboxCard(item) {
       p.phone ? el('p', { class: 'small' }, el('span', { class: 'muted' }, 'Phone: '), el('span', { class: 'mono' }, p.phone), ' ', el('button', { type: 'button', class: 'btn link', onclick: () => copy(p.phone, 'Number copied') }, 'Copy')) : null,
       el('label', { for: `subj-${item.id}` }, 'Subject', subjectInput),
       el('label', { for: `body-${item.id}` }, 'Message', bodyInput),
-      el('div', { class: 'footer-preview', 'aria-label': 'Added to the end of every email' }, footer().trimStart())),
+      el('div', { class: 'footer-preview', 'aria-label': 'Added to the end of every email' }, footer().trimStart()),
+      textInput ? el('label', { for: `text-${item.id}` }, p.phone ? `Text message (you send it from your phone to ${p.phone})` : 'Text message (no phone number on file)', textInput) : null),
     gateSlot, actions);
 }
 async function copy(text, msg) {
@@ -387,7 +414,7 @@ function renderOutbox() {
   if (recent.length) {
     sec.append(el('h2', {}, 'Recently sent'), el('div', { class: 'table-wrap' }, el('table', {},
       el('thead', {}, el('tr', {}, el('th', {}, 'Sent'), el('th', {}, 'To'), el('th', {}, 'Subject'), el('th', {}, 'Step'))),
-      el('tbody', {}, recent.map((o) => el('tr', {}, el('td', { class: 'num' }, fmt(o.sent_at)), el('td', { class: 'mono' }, o.to), el('td', {}, o.subject), el('td', {}, STEP_LABEL[o.step] || '')))))));
+      el('tbody', {}, recent.map((o) => el('tr', {}, el('td', { class: 'num' }, fmt(o.sent_at)), el('td', { class: 'mono' }, o.to), el('td', {}, o.subject), el('td', {}, (STEP_LABEL[o.step] || '') + (o.channel === 'text' ? ' (text)' : ''))))))));
   }
   return sec;
 }
