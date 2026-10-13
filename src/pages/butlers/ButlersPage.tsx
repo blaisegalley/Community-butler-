@@ -35,7 +35,7 @@ export default function ButlersPage() {
           </h1>
           <p className="text-graphite text-[16px] sm:text-[17px] leading-[1.6]">
             These are the students who actually show up. Every profile here has been read and approved by a manager
-            before it went up, and every butler has a parent&rsquo;s consent on file.
+            before it went up.
           </p>
         </Animate>
 

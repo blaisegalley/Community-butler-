@@ -74,13 +74,6 @@ export default function ProfileReview({
               <span className="font-normal text-black/45"> &middot; shown as {profile.displayName}</span>
             )}
           </div>
-          <div className="text-[12.5px] text-black/45 mt-0.5">
-            {profile.guardianConsent ? (
-              <>Guardian: {profile.guardianName || 'name missing'} &middot; {profile.guardianContact || 'contact missing'}</>
-            ) : (
-              <span className="text-[#8c2f1c] font-medium">No guardian consent on file — cannot be published</span>
-            )}
-          </div>
         </div>
         <span
           className={`text-[11px] font-bold uppercase tracking-wide rounded-full px-[10px] py-[3px] whitespace-nowrap ${
@@ -150,8 +143,7 @@ export default function ProfileReview({
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => decide('Approved')}
-              disabled={busy || !profile.guardianConsent}
-              title={profile.guardianConsent ? undefined : 'Needs guardian consent first'}
+              disabled={busy}
               className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
             >
               Approve &amp; publish

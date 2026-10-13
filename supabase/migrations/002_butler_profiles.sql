@@ -26,8 +26,8 @@ alter table public.butlers
   -- something they can act on rather than a dead end.
   add column if not exists profile_note text not null default '',
   add column if not exists reviewed_at timestamptz,
-  -- Under-18s need a parent's say-so before their face and first name go
-  -- on the internet. Recorded here, checked before publishing.
+  -- Guardian consent. No longer asked for or required to publish; kept so
+  -- re-running this file needs no destructive migration.
   add column if not exists guardian_consent boolean not null default false,
   add column if not exists guardian_name text not null default '',
   add column if not exists guardian_contact text not null default '';
@@ -45,16 +45,13 @@ end $$;
 create index if not exists butlers_review_queue_idx
   on public.butlers (profile_status, signed_up_at desc);
 
--- A profile cannot be Approved without consent on file. Enforced here
+-- A profile cannot be Approved without a display name. Enforced here
 -- rather than in the dashboard, because a check that lives only in the
 -- UI is one refactor away from not existing.
 create or replace function public.butlers_guard_publication()
 returns trigger language plpgsql as $$
 begin
   if new.profile_status = 'Approved' then
-    if not new.guardian_consent then
-      raise exception 'Cannot publish a profile without guardian consent on file';
-    end if;
     if coalesce(nullif(trim(new.display_name), ''), '') = '' then
       raise exception 'Cannot publish a profile without a display name';
     end if;
@@ -138,7 +135,6 @@ language sql stable security definer set search_path = public as $$
   select b.id, b.display_name, b.bio, b.photo_path, b.job_type_prefs, b.signed_up_at
   from public.butlers b
   where b.profile_status = 'Approved'
-    and b.guardian_consent
   order by b.signed_up_at asc;
 $$;
 

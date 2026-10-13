@@ -267,7 +267,7 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
             <p className="text-[12.5px] text-black/45 mb-3.5 max-w-[70ch]">
               Nothing here is public until you approve it. Read the bio against what the Butler actually wrote — it is
               drafted automatically and can overstate things. Every one of these is a minor, so check the photo is
-              really them and that a guardian has signed off.
+              really them.
             </p>
             {sortedProfiles.length ? (
               <div className="flex flex-col gap-2.5">
