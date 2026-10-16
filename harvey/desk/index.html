@@ -138,7 +138,8 @@ td select { width: auto; padding: 4px 6px; font-size: 13px; }
   <div id="banners" style="display:grid;gap:8px"></div>
 
   <nav class="tabs" role="tablist" aria-label="Desk sections">
-    <button role="tab" id="tab-outbox" aria-selected="true" data-tab="outbox">Outbox <span class="count" id="c-outbox">0</span></button>
+    <button role="tab" id="tab-outbox" aria-selected="true" data-tab="outbox">New emails <span class="count" id="c-outbox">0</span></button>
+    <button role="tab" id="tab-followups" aria-selected="false" data-tab="followups">Follow-ups <span class="count" id="c-followups">0</span></button>
     <button role="tab" id="tab-pipeline" aria-selected="false" data-tab="pipeline">Pipeline <span class="count" id="c-pipeline">0</span></button>
     <button role="tab" id="tab-replies" aria-selected="false" data-tab="replies">Replies <span class="count" id="c-replies">0</span></button>
     <button role="tab" id="tab-optouts" aria-selected="false" data-tab="optouts">Opt-outs <span class="count" id="c-optouts">0</span></button>
@@ -279,7 +280,7 @@ function render() {
   renderStrip(); renderBanners();
   for (const b of document.querySelectorAll('nav.tabs button')) b.setAttribute('aria-selected', String(b.dataset.tab === state.tab));
   const panel = $('panel');
-  const view = { outbox: renderOutbox, pipeline: renderPipeline, replies: renderReplies, optouts: renderOptouts, settings: renderSettings }[state.tab] || renderOutbox;
+  const view = { outbox: renderOutbox, followups: renderFollowups, pipeline: renderPipeline, replies: renderReplies, optouts: renderOptouts, settings: renderSettings }[state.tab] || renderOutbox;
   panel.replaceChildren(view());
 }
 document.addEventListener('focusout', () => setTimeout(() => { if (pendingRender) render(); }, 0));
@@ -288,12 +289,13 @@ function renderStrip() {
   const ob = [...state.outbox.values()];
   const review = ob.filter((o) => o.status === 'pending').length;
   const ready = ob.filter((o) => o.status === 'approved').length;
+  const fuWaiting = ob.filter((o) => isFollowup(o) && (o.status === 'pending' || o.status === 'approved')).length;
   const replies = [...state.replies.values()].filter((r) => !r.handled).length;
   $('s-review').textContent = review; $('s-ready').textContent = ready;
   $('s-sent').textContent = `${sentToday()} / ${settings().max_daily_sends}`;
   $('s-replies').textContent = replies;
   const set = (id, n, hot) => { const c = $(id); c.textContent = n; c.classList.toggle('hot', !!hot && n > 0); };
-  set('c-outbox', review + ready, true); set('c-pipeline', state.prospects.size); set('c-replies', replies, true); set('c-optouts', state.optouts.size);
+  set('c-outbox', review + ready - fuWaiting, true); set('c-followups', fuWaiting, true); set('c-pipeline', state.prospects.size); set('c-replies', replies, true); set('c-optouts', state.optouts.size);
   const run = state.runs[0];
   $('last-run').textContent = !state.loaded ? 'Loading…' : run ? `Harvey last ran ${fmt(run.at)}: ${run.summary || run.mode || ''}` : 'Harvey hasn’t run yet.';
 }
@@ -304,6 +306,9 @@ function renderBanners() {
   if (!gate) box.append(el('div', { class: 'banner warn' }, el('span', {}, 'The email checks didn’t load, so edits aren’t re-checked. Reload the page before approving edited emails.')));
 }
 
+function isFollowup(o) { return o.step === 2 || o.step === 3; }
+function tooEarly(item) { return !!item.send_after && chicagoDay(now()) < item.send_after; }
+function dayLabel(day) { return new Date(`${day}T12:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
 function stepPill(item) { return el('span', { class: 'pill' }, STEP_LABEL[item.step] || 'Email'); }
 function trackPill(t) { return el('span', { class: `pill ${t === 'A' ? 'a' : 'b'}` }, TRACK_LABEL[t] || t || '?'); }
 
@@ -384,6 +389,7 @@ function outboxCard(item) {
     el('div', { class: 'card-head' }, trackPill(item.track), stepPill(item), el('span', { class: 'who' }, who), p.town ? el('span', { class: 'muted small' }, p.town) : null),
     p.signal ? el('p', { class: 'why' }, el('span', { class: 'muted' }, 'Why them: '), p.signal, ' ', p.signal_source ? link(p.signal_source, '(source)') : null) : null,
     item.note ? el('p', { class: 'note' }, item.note) : null,
+    item.send_after && item.status !== 'sent' ? el('p', { class: tooEarly(item) ? 'note' : 'small muted' }, tooEarly(item) ? `Wait until ${dayLabel(item.send_after)} to send this one, so it isn't too soon after the last email.` : `Okay to send now (earliest was ${dayLabel(item.send_after)}).`) : null,
     el('div', { class: 'fields' },
       el('p', { class: 'small' }, el('span', { class: 'muted' }, 'To: '), el('span', { class: 'mono' }, item.to), p.email_source ? [' ', link(p.email_source, '(where we found it)')] : null),
       p.phone ? el('p', { class: 'small' }, el('span', { class: 'muted' }, 'Phone: '), el('span', { class: 'mono' }, p.phone), ' ', el('button', { type: 'button', class: 'btn link', onclick: () => copy(p.phone, 'Number copied') }, 'Copy')) : null,
@@ -398,16 +404,17 @@ async function copy(text, msg) {
   catch { toast('Copy was blocked. Select the text and copy it yourself.'); }
 }
 
-function renderOutbox() {
-  const items = [...state.outbox.values()].sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+function renderOutbox() { return renderQueue({ tab: 'outbox', keep: (o) => !isFollowup(o), empty: 'Nothing waiting on you', emptyText: 'New first emails and replies land here for you to read, edit and approve. Follow-ups have their own tab. Nothing is ever sent without you. Ask Claude to “run Harvey” for a new batch.', loading: 'Loading the outbox…' }); }
+function renderFollowups() { return renderQueue({ tab: 'followups', keep: isFollowup, empty: 'No follow-ups waiting', emptyText: 'When someone hasn’t answered a first email after 4 days, Harvey writes a short follow-up and puts it here. They reuse the first email’s subject so they land in the same thread.', loading: 'Loading follow-ups…' }); }
+function renderQueue(opt) {
+  const items = [...state.outbox.values()].filter(opt.keep).sort((a, b) => (a.send_after || '').localeCompare(b.send_after || '') || (a.created_at || '').localeCompare(b.created_at || ''));
   const pending = items.filter((o) => o.status === 'pending');
   const approved = items.filter((o) => o.status === 'approved');
   const recent = items.filter((o) => o.status === 'sent').sort((a, b) => (b.sent_at || '').localeCompare(a.sent_at || '')).slice(0, 10);
-  const sec = el('section', { class: 'panel', 'aria-labelledby': 'tab-outbox' });
-  if (!state.loaded) { sec.append(el('div', { class: 'empty' }, 'Loading the outbox…')); return sec; }
+  const sec = el('section', { class: 'panel', 'aria-labelledby': `tab-${opt.tab}` });
+  if (!state.loaded) { sec.append(el('div', { class: 'empty' }, opt.loading)); return sec; }
   if (!pending.length && !approved.length) {
-    sec.append(el('div', { class: 'empty' }, el('h2', {}, 'Nothing waiting on you'),
-      el('p', {}, 'When Harvey writes emails they land here for you to read, edit and approve. Nothing is ever sent without you. Ask Claude to “run Harvey” for a new batch.')));
+    sec.append(el('div', { class: 'empty' }, el('h2', {}, opt.empty), el('p', {}, opt.emptyText)));
   }
   if (approved.length) sec.append(el('div', { class: 'group-title' }, el('h2', {}, 'Ready to send'), el('span', { class: 'muted small' }, 'Open each one in Gmail, press send there, then mark it sent here.')), ...approved.map(outboxCard));
   if (pending.length) sec.append(el('div', { class: 'group-title' }, el('h2', {}, 'To review'), el('span', { class: 'muted small' }, 'Edit anything you like. Approve only what you’d happily sign.')), ...pending.map(outboxCard));

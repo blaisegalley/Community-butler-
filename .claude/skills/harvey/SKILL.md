@@ -49,7 +49,7 @@ Use the `ArtifactData` tool with `url` = `desk.url`. Collections:
 |---|---|---|
 | `settings` | `main` | `from_name, role, from_email, website, mailing_address, max_daily_sends` |
 | `prospects` | `p-<slug of business>-<slug of contact or town>` | `track` (A/B), `business, contact_name, role, email, email_source, phone, phone_source, website, town, signal, signal_source, status, notes, created_at, updated_at, last_contact_at, last_step, next_step_at` |
-| `outbox` | `o-<prospect id>-<step>` (replies: `o-<prospect id>-r<n>`) | `prospect_id, to, track, step` (1, 2, 3 or `"reply"`), `subject, body, text` (optional text-message version, see writing.md), `status, note, created_at` (+ `texted_at` set by the Desk) (+ `decided_at, sent_at, reject_reason, in_reply_to` set by the Desk) |
+| `outbox` | `o-<prospect id>-<step>` (replies: `o-<prospect id>-r<n>`) | `prospect_id, to, track, step` (1, 2, 3 or `"reply"`), `subject, body, text` (optional text-message version, see writing.md), `send_after` (follow-ups: `YYYY-MM-DD`, Chicago date when it's okay to send), `status, note, created_at` (+ `texted_at` set by the Desk) (+ `decided_at, sent_at, reject_reason, in_reply_to` set by the Desk) |
 | `replies` | set by the Desk | `prospect_id, from, text, received_at, intent, handled, logged_by` |
 | `optouts` | email with every non-alphanumeric character as `_`, lowercased | `email, reason, prospect_id, at` |
 | `runs` | `run-<ISO timestamp, colons as ->` | `at, mode, summary` |
@@ -103,6 +103,10 @@ For each prospect with `status: contacted` and no reply:
 - After step 3, do nothing more.
 
 Follow-ups reuse email 1's subject exactly and add one new useful thing.
+Set `send_after` to the date the gap is reached (sent date + 4 days for step 2, + 7 for
+step 3). If Blaise asks for follow-ups early, draft them now with that
+`send_after` so the Desk tells him when to send. Follow-ups show on the Desk's
+Follow-ups tab, separate from new first emails.
 
 ### 4. New prospects and first emails
 
