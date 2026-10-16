@@ -5,10 +5,12 @@ Community Butler (sorting requests, matching Butlers, drafting outreach,
 following up). The three co-admins keep every decision that reaches a
 neighbour, a student or the public.
 
-> **Status:** design proposal. Nothing here is built yet. §12 gives the
-> order to build it in, and every piece fits the stack this repo already
-> uses: Supabase tables + RLS, `security definer` RPCs, Deno edge
-> functions, `pg_cron`, Web Push, Resend and the Anthropic API.
+> **Status:** the core loop is built: the Dispatcher, Intake, Safety,
+> Matchmaker, Lead Scout, Voice Editor, Care, the Executor and the
+> Approvals tab in `/admin`. The Recruiter (A4), B2B + Web Studio (A6)
+> and Analyst (A9) are not built yet. §12 lists what exists and where, and
+> "Where the build differs from this design" at the end of it records
+> each place the code departs from the text below. Setup: `SETUP.md` §9.
 
 ---
 
@@ -136,10 +138,11 @@ improvements. Those suggestions also need approval.
 | — | **Executor** | Sends or posts approved items. Idempotent. | none (code) | on approval |
 | — | **Human Approval Gate** | The three co-admins | — | — |
 
-\*Model tiers map to the current Claude family: **small** =
-`claude-haiku-5-5` (classification, extraction, short rewrites),
-**medium** = `claude-sonnet-5-5` (drafting, judgement), **large** =
-`claude-opus-5-5` (weekly analysis, website proposals; used rarely). See §8.
+\*Model tiers as designed: **small** = `claude-haiku-5-5`, **medium** =
+`claude-sonnet-5-5`, **large** = `claude-opus-5-5`. **As built**, every
+agent uses `claude-opus-5-5` and varies the effort level instead (`low`
+for classification and voice scoring, `medium` for drafting). Set
+`AGENT_MODEL` to change the model. See §8.
 
 Each agent card below lists the agent's **role**, **inputs**, **outputs**,
 **decision logic**, and the things it is **not allowed** to do.
@@ -955,6 +958,39 @@ create table public.demand_signals (id uuid primary key default gen_random_uuid(
 
 This order is sized for three people with school schedules. Each step is
 useful on its own.
+
+**Built so far (steps 2–6):**
+
+| Piece | Where |
+|---|---|
+| Agent core (pure TypeScript; runs in Deno, the browser and Node) | `supabase/functions/_shared/agents/` |
+| Unit tests (`npm test`) | `supabase/functions/_shared/agents/agents.test.ts` |
+| Tables, RLS, `submit_lead`, `claim_agent_tasks` | `supabase/migrations/004_agents.sql` |
+| Dispatcher (cron every 5 min, or "Run agents now") | `supabase/functions/agent-dispatcher/` |
+| Approval Gate + Executor | `supabase/functions/agent-decide/`, `_shared/agentRuntime.ts` |
+| Claude connection (structured outputs, `fallbacks: "default"`, prompt caching) | `supabase/functions/_shared/agentLlm.ts` |
+| Approvals tab, and the browser runtime for demo mode | `src/components/Approvals.tsx`, `src/lib/agents/` |
+
+**Where the build differs from this design:**
+
+- **Planning.** No database triggers. Every run, the Dispatcher works
+  out which tasks the current jobs imply and inserts the missing ones by
+  idempotency key. Demo mode has no triggers either, so both modes use
+  the same mechanism.
+- **Model failures.** The SDK retries twice. After that the agent drops
+  straight to its template for that task, instead of retrying the whole
+  task three times.
+- **No separate tables** for `approvals`, `feedback_events`,
+  `service_areas`, `price_book` or `demand_signals`. Decisions are stored
+  on the task (`agent_tasks.decisions`). Towns and prices live in
+  `agent_config`. A waitlisted request is recorded through the job's
+  reject note.
+- **Approvals in demo mode.** Drafts come from templates only (an API
+  key must never reach a browser). Job status changes are real; messages
+  are shown for you to send yourself.
+- **Golden set.** Step 1's golden set is not built yet. The unit tests
+  cover the rules, the refinement loop and the approval rules, but they
+  don't score draft quality.
 
 1. **Week 1: prompts only (Phase 0).** Write the brand voice guide,
    safety policy and service catalog as markdown. Use them in Claude Code
