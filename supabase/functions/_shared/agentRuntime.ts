@@ -12,7 +12,9 @@ import {
   approvedTexts,
   butlerStats,
   jobFromRow,
+  LEAD_COLUMNS,
   leadFromRow,
+  leadStatusAdvances,
   mergeConfig,
   taskFromRow,
   taskUpdate,
@@ -23,6 +25,7 @@ import type {
   AgentButler,
   AgentConfig,
   AgentJob,
+  AgentRun,
   AgentTask,
   DispatcherIO,
   JobRowForAgents,
@@ -31,6 +34,7 @@ import type {
   TaskRow,
 } from './agents/index.ts';
 import { sendEmail } from './email.ts';
+import { sendPush, type PushSubscriptionRow } from './push.ts';
 
 function check<T>(result: { data: T; error: { message: string } | null }, context: string): T {
   if (result.error) throw new Error(`${context}: ${result.error.message}`);
@@ -69,9 +73,9 @@ export function remoteIO(db: SupabaseClient, llm: Llm | null, config: AgentConfi
 
     async loadButlers(): Promise<AgentButler[]> {
       const rows = check(
-        await db.from('butlers').select('id,name,service_area,job_type_prefs,intake,profile_status'),
+        await db.from('butlers').select('id,name,service_area,job_type_prefs,intake,profile_status,signed_up_at'),
         'Could not load butlers',
-      ) as { id: string; name: string; service_area: string; job_type_prefs: string[]; intake: { grade?: string } | null; profile_status: string }[];
+      ) as { id: string; name: string; service_area: string; job_type_prefs: string[]; intake: { grade?: string } | null; profile_status: string; signed_up_at: string }[];
       const all = await jobs();
       const now = new Date();
       return rows.map((row) => ({
@@ -81,12 +85,14 @@ export function remoteIO(db: SupabaseClient, llm: Llm | null, config: AgentConfi
         jobTypePrefs: row.job_type_prefs ?? [],
         grade: row.intake?.grade ?? '',
         approved: row.profile_status === 'Approved',
+        profileStatus: row.profile_status ?? '',
+        signedUpAt: row.signed_up_at,
         stats: butlerStats(row.id, all, now),
       }));
     },
 
     async loadLead(id) {
-      const { data } = await db.from('leads').select('id,channel,text,town,author,status,created_at').eq('id', id).maybeSingle();
+      const { data } = await db.from('leads').select(LEAD_COLUMNS).eq('id', id).maybeSingle();
       return data ? leadFromRow(data as LeadRow) : null;
     },
 
@@ -152,6 +158,26 @@ export function remoteIO(db: SupabaseClient, llm: Llm | null, config: AgentConfi
       start.setUTCHours(0, 0, 0, 0);
       const rows = check(await db.from('agent_runs').select('cost_usd').gte('at', start.toISOString()).eq('mode', 'model'), 'Could not read spend') as { cost_usd: number }[];
       return rows.reduce((sum, r) => sum + Number(r.cost_usd), 0);
+    },
+
+    async loadLeads() {
+      const since = new Date(Date.now() - 180 * 24 * 3600 * 1000).toISOString();
+      const rows = check(await db.from('leads').select(LEAD_COLUMNS).gte('created_at', since).limit(1000), 'Could not load leads') as LeadRow[];
+      return rows.map(leadFromRow);
+    },
+
+    async recentTasks(days) {
+      const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+      return toTasks(await db.from('agent_tasks').select(TASK_COLUMNS).gte('updated_at', since).limit(2000));
+    },
+
+    async recentRuns(days): Promise<AgentRun[]> {
+      const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+      const rows = check(
+        await db.from('agent_runs').select('task_id,agent,purpose,mode,input_tokens,output_tokens,cost_usd,error,at').gte('at', since).limit(5000),
+        'Could not load agent runs',
+      ) as { task_id: string; agent: AgentRun['agent']; purpose: string; mode: AgentRun['mode']; input_tokens: number; output_tokens: number; cost_usd: number; error: string; at: string }[];
+      return rows.map((r) => ({ taskId: r.task_id, agent: r.agent, purpose: r.purpose, mode: r.mode, inputTokens: r.input_tokens, outputTokens: r.output_tokens, costUsd: Number(r.cost_usd), error: r.error, at: r.at }));
     },
   };
 }
@@ -267,6 +293,49 @@ export async function execute(
     case 'mark_posted': {
       await db.from('leads').update({ status: 'replied' }).eq('id', action.leadId);
       return { ok: true, detail: 'Marked as posted.' };
+    }
+
+    case 'notify_butlers': {
+      const { error } = await db.from('butler_notifications').insert(action.butlerIds.map((id) => ({ butler_id: id, message: text.slice(0, 500) })));
+      if (error) return { ok: false, detail: `Could not notify them: ${error.message}` };
+      const { data: subscriptions } = await db.from('push_subscriptions').select('id,endpoint,p256dh,auth').in('butler_id', action.butlerIds);
+      const pushed = await sendPush((subscriptions ?? []) as PushSubscriptionRow[], {
+        title: config.businessName,
+        body: text.slice(0, 180),
+        url: `${(Deno.env.get('APP_URL') ?? config.siteUrl).replace(/\/$/, '')}/auth/`,
+      });
+      return { ok: true, detail: `Sent to ${action.butlerIds.length} Butler${action.butlerIds.length > 1 ? 's' : ''} in the app${pushed.sent ? ` (${pushed.sent} phone notification${pushed.sent > 1 ? 's' : ''})` : ''}.` };
+    }
+
+    case 'send_email': {
+      const sent = await sendEmail({ to: action.to, subject: action.subject, heading: action.subject, lines: paragraphs(text), footnote: `${config.businessName} · ${config.businessPhone}` });
+      // Recorded either way: if the email has to go out by hand, it still went out.
+      if (action.leadId && action.leadStatus) {
+        const { data: lead } = await db.from('leads').select('status').eq('id', action.leadId).maybeSingle();
+        if (lead && leadStatusAdvances(lead.status, action.leadStatus)) await db.from('leads').update({ status: action.leadStatus }).eq('id', action.leadId);
+      }
+      return sent
+        ? { ok: true, detail: `Emailed ${action.to}` }
+        : { ok: true, detail: `Email isn't set up or was rejected — send this to ${action.to} yourself.` };
+    }
+
+    case 'manual_post':
+      return { ok: true, detail: `Marked as posted on ${action.where}.` };
+
+    case 'apply_config': {
+      const { data: current } = await db.from('agent_config').select('version,config').eq('active', true).maybeSingle();
+      const next = { ...((current?.config as Record<string, unknown>) ?? {}), ...action.patch };
+      if (current) await db.from('agent_config').update({ active: false }).eq('version', current.version);
+      const { data: inserted, error } = await db.from('agent_config').insert({ config: next, active: true, note: action.summary.slice(0, 200) }).select('version').single();
+      if (error) {
+        // Put the old version back rather than leave no active config.
+        if (current) await db.from('agent_config').update({ active: true }).eq('version', current.version);
+        return { ok: false, detail: `Could not save the change: ${error.message}` };
+      }
+      return {
+        ok: true,
+        detail: `Applied as config version ${inserted.version}.${current ? ` To undo, re-activate version ${current.version} (see SETUP.md §9).` : ''}`,
+      };
     }
 
     case 'acknowledge':

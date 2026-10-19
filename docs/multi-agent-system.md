@@ -5,10 +5,8 @@ Community Butler (sorting requests, matching Butlers, drafting outreach,
 following up). The three co-admins keep every decision that reaches a
 neighbour, a student or the public.
 
-> **Status:** the core loop is built: the Dispatcher, Intake, Safety,
-> Matchmaker, Lead Scout, Voice Editor, Care, the Executor and the
-> Approvals tab in `/admin`. The Recruiter (A4), B2B + Web Studio (A6)
-> and Analyst (A9) are not built yet. §12 lists what exists and where, and
+> **Status:** all ten agents are built (A0–A9), with the Executor and
+> the Approvals tab in `/admin`. §12 lists what exists and where, and
 > "Where the build differs from this design" at the end of it records
 > each place the code departs from the text below. Setup: `SETUP.md` §9.
 
@@ -959,7 +957,7 @@ create table public.demand_signals (id uuid primary key default gen_random_uuid(
 This order is sized for three people with school schedules. Each step is
 useful on its own.
 
-**Built so far (steps 2–6):**
+**Built (steps 2–7):**
 
 | Piece | Where |
 |---|---|
@@ -969,7 +967,11 @@ useful on its own.
 | Dispatcher (cron every 5 min, or "Run agents now") | `supabase/functions/agent-dispatcher/` |
 | Approval Gate + Executor | `supabase/functions/agent-decide/`, `_shared/agentRuntime.ts` |
 | Claude connection (structured outputs, `fallbacks: "default"`, prompt caching) | `supabase/functions/_shared/agentLlm.ts` |
-| Approvals tab, and the browser runtime for demo mode | `src/components/Approvals.tsx`, `src/lib/agents/` |
+| A4 Recruiter: supply gaps, surplus towns, season run-ups, profile nudges, check-ins | `_shared/agents/recruiter.ts` |
+| A6 B2B outreach (3 touches) and Web Studio (proposal, referral, build brief) | `_shared/agents/b2b.ts` |
+| A9 Analyst: weekly review and config proposals | `_shared/agents/analyst.ts` |
+| Prospects, `system` tasks, `submit_prospect`, `set_lead_status` | `supabase/migrations/005_more_agents.sql` |
+| Approvals tab, Prospects panel, and the browser runtime for demo mode | `src/components/Approvals.tsx`, `src/lib/agents/` |
 
 **Where the build differs from this design:**
 
@@ -988,6 +990,25 @@ useful on its own.
 - **Approvals in demo mode.** Drafts come from templates only (an API
   key must never reach a browser). Job status changes are real; messages
   are shown for you to send yourself.
+- **Recruiter, B2B and Analyst plan their own work.** They look across
+  the whole roster or week rather than one row, so each finding becomes
+  its own `system` task with a weekly key (for example
+  `recruit:gap:Barrington:Snow shoveling:2026-W43`). When its turn comes
+  the finding is recomputed, and the card is closed if it no longer applies.
+- **Recruiter scope.** Partner-school outreach is a variant of the GroupMe
+  post, not a separate email campaign. The profile nudge and the
+  waiting-review reminder only fire on the hosted backend, because demo
+  Butlers have no profile status.
+- **B2B research.** The agent doesn't browse the web. An admin pastes what
+  they know about the business into Prospects, and the agent works from
+  that.
+- **Website inquiries** are entered by an admin in Prospects. There is no
+  public inquiry form yet.
+- **Analyst.** The weekly review is a card in the inbox, not an email.
+  Proposals that change policy apply as a new `agent_config` version.
+  Undo it by re-activating the previous version (`SETUP.md` §9). Lead →
+  job attribution (`?ref=` links) isn't built, so the review counts posts
+  and replies, not bookings per channel.
 - **Golden set.** Step 1's golden set is not built yet. The unit tests
   cover the rules, the refinement loop and the approval rules, but they
   don't score draft quality.

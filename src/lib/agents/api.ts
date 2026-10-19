@@ -13,7 +13,7 @@
 import type { AgentTask, DecisionInput, Lead, RunSummary } from '@agents/index.ts';
 import { isShared, refreshAll } from '@/lib/store';
 
-export type { AgentTask, Draft, RunSummary } from '@agents/index.ts';
+export type { AgentTask, Draft, Lead, RunSummary } from '@agents/index.ts';
 export type DecisionKind = DecisionInput['decision'] | 'retry';
 
 const OPEN_STATES = ['awaiting_approval', 'queued', 'running', 'retry', 'dead_letter'];
@@ -98,4 +98,67 @@ export async function submitLead(input: Pick<Lead, 'channel' | 'text' | 'town' |
   }
   // Draft the reply straight away rather than waiting for the next scheduled run.
   return runAgentsNow();
+}
+
+// ---------------------------------------------------------------- prospects
+
+export interface ProspectInput {
+  kind: 'b2b' | 'web';
+  org: string;
+  segment: string;
+  contactName: string;
+  email: string;
+  town: string;
+  budget: string;
+  website: string;
+  notes: string;
+  author: string;
+}
+
+/** Businesses and website inquiries, newest first. */
+export async function getProspects(): Promise<Lead[]> {
+  if (!isShared) {
+    const { localLeads } = await import('./local');
+    return localLeads()
+      .filter((l) => l.channel === 'b2b' || l.channel === 'web')
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  const { LEAD_COLUMNS, leadFromRow } = await import('@agents/rows.ts');
+  const db = await remoteClient();
+  const { data, error } = await db.from('leads').select(LEAD_COLUMNS).in('channel', ['b2b', 'web']).order('created_at', { ascending: false }).limit(100);
+  if (error) throw new Error(`Could not load prospects: ${error.message}`);
+  return (data ?? []).map(leadFromRow);
+}
+
+export async function submitProspect(input: ProspectInput): Promise<RunSummary> {
+  if (!isShared) {
+    const { submitLocalProspect } = await import('./local');
+    const details: Record<string, string> = { org: input.org.trim() };
+    for (const [key, value] of Object.entries({ segment: input.segment, contactName: input.contactName, email: input.email.trim().toLowerCase(), budget: input.budget, website: input.website })) {
+      if (value.trim()) details[key] = value.trim();
+    }
+    await submitLocalProspect({ kind: input.kind, text: input.notes.trim(), town: input.town.trim(), author: input.author.trim(), details });
+  } else {
+    const db = await remoteClient();
+    const { error } = await db.rpc('submit_prospect', {
+      p_kind: input.kind, p_org: input.org, p_segment: input.segment, p_contact: input.contactName, p_email: input.email,
+      p_town: input.town, p_budget: input.budget, p_website: input.website, p_notes: input.notes, p_author: input.author,
+    });
+    if (error) throw new Error(`Could not save that prospect: ${error.message}`);
+  }
+  return runAgentsNow();
+}
+
+/** 'replied' stops follow-ups; 'won' on a website inquiry gets the build brief drafted. */
+export async function setProspectStatus(id: string, status: 'replied' | 'won' | 'dropped'): Promise<void> {
+  if (!isShared) {
+    const { setLocalLeadStatus } = await import('./local');
+    setLocalLeadStatus(id, status);
+  } else {
+    const db = await remoteClient();
+    const { error } = await db.rpc('set_lead_status', { p_id: id, p_status: status });
+    if (error) throw new Error(`Could not update that prospect: ${error.message}`);
+  }
+  if (status === 'won') await runAgentsNow();
+  refreshAll();
 }

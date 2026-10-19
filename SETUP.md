@@ -206,15 +206,26 @@ Then walk through it by hand:
 
 The **Approvals** tab in `/admin` is an inbox of drafts written by the
 agents in `supabase/functions/_shared/agents/` (design:
-`docs/multi-agent-system.md`). They sort new requests, flag anything
-unsafe, propose which Butler should take a job, draft Nextdoor replies
-from posts you paste in, and write follow-up emails. **They only draft.**
-Nothing is sent and no job changes until one of you approves the card.
+`docs/multi-agent-system.md`). They:
+
+- sort new requests and flag anything unsafe
+- propose which Butler should take a job
+- draft Nextdoor replies from posts you paste in, and follow-up emails
+- flag towns and services that are short on Butlers, and draft the
+  recruiting post
+- draft outreach to the businesses you add under **Businesses and
+  website inquiries**, and website proposals at the right package
+- write a weekly review every Monday, with suggested policy changes as
+  separate cards
+
+**They only draft.** Nothing is sent, no job changes and no policy
+changes until one of you approves the card.
 
 It already works in demo mode: open `/admin` → **Approvals**. Drafts
 come from templates and no messages go out. To run it for real:
 
-1. **SQL Editor**: run `supabase/migrations/004_agents.sql`.
+1. **SQL Editor**: run `supabase/migrations/004_agents.sql`, then
+   `supabase/migrations/005_more_agents.sql`.
 2. Deploy the two functions:
 
    ```bash
@@ -246,8 +257,15 @@ insert into public.agent_config (config, active, note)
 values ('{"monthlyBudgetUsd": 10, "priceBook": {"Snow shoveling": {"floor": 20, "low": 30, "high": 70}}}', true, 'Lower budget, snow prices');
 ```
 
-Anything you leave out keeps its default from `config.ts`. To roll back,
-switch `active` back to the previous row. To switch every agent off, set
+Anything you leave out keeps its default from `config.ts`. Approving an
+Analyst proposal (for example "Start serving Palatine?") writes a new
+row the same way. To roll back, switch `active` back to the previous row:
+
+```sql
+select version, note, created_at from public.agent_config order by version desc limit 5;
+update public.agent_config set active = false where active;
+update public.agent_config set active = true where version = <previous version>;
+``` To switch every agent off, set
 `{"killSwitches": {"all": true}}`.
 
 **Tests.** `npm test` runs the agent unit tests. It needs Node 22.18 or

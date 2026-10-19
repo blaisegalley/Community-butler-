@@ -27,6 +27,8 @@ export interface AgentJob {
   assignedAt: string | null;
   completedAt: string | null;
   rating?: number;
+  /** Why an admin closed it. The Analyst reads waitlist notes ("Outside our service area (Palatine)") as demand. */
+  rejectNote?: string;
 }
 
 /** A butler as the Matchmaker sees it: enough to rank, nothing more. */
@@ -39,6 +41,9 @@ export interface AgentButler {
   grade: string;
   /** True when a manager has approved the public profile (hosted backend), or always in demo mode. */
   approved: boolean;
+  /** 'Draft' | 'Pending' | 'Approved' | 'Rejected', or '' in demo mode. */
+  profileStatus: string;
+  signedUpAt: string;
   stats: {
     assigned: number;
     completed: number;
@@ -50,20 +55,33 @@ export interface AgentButler {
   };
 }
 
+/**
+ * Something an admin brought in: a post to reply to (nextdoor, instagram,
+ * email, other), a business to reach out to (b2b), or a website inquiry (web).
+ */
 export interface Lead {
   id: string;
-  channel: 'nextdoor' | 'instagram' | 'email' | 'other';
+  channel: 'nextdoor' | 'instagram' | 'email' | 'other' | 'b2b' | 'web';
+  /** The post, or for b2b/web the admin's notes about what they need. */
   text: string;
   town: string;
-  /** First name of the admin who pasted it — Nextdoor replies are written as them. */
+  /** First name of the admin who added it — replies and outreach are written as them. */
   author: string;
-  status: 'new' | 'replied' | 'dropped';
+  status: LeadStatus;
+  /** b2b/web only: org, segment, contactName, email, budget, website. */
+  details: Record<string, string>;
   createdAt: string;
 }
 
-export type AgentId = 'dispatcher' | 'intake' | 'safety' | 'matchmaker' | 'lead_scout' | 'voice' | 'care';
+export type LeadStatus = 'new' | 'contacted' | 'replied' | 'won' | 'dropped';
 
-export type TaskType = 'JOB_INTAKE' | 'JOB_MATCH' | 'MATCH_ESCALATE' | 'LEAD_TRIAGE' | 'JOB_FOLLOWUP';
+export type AgentId =
+  | 'dispatcher' | 'intake' | 'safety' | 'matchmaker' | 'lead_scout' | 'voice' | 'care'
+  | 'recruiter' | 'b2b' | 'web_studio' | 'analyst';
+
+export type TaskType =
+  | 'JOB_INTAKE' | 'JOB_MATCH' | 'MATCH_ESCALATE' | 'LEAD_TRIAGE' | 'JOB_FOLLOWUP'
+  | 'SUPPLY_CHECK' | 'B2B_OUTREACH' | 'WEB_LEAD' | 'WEB_BRIEF' | 'WEEKLY_REVIEW' | 'CONFIG_PROPOSAL';
 
 export type TaskState =
   | 'queued'
@@ -88,8 +106,17 @@ export type Action =
   | { kind: 'decline_job'; jobId: string; note: string; notifyNeighbor: boolean }
   | { kind: 'message_neighbor'; jobId: string; subject: string }
   | { kind: 'assign_butler'; jobId: string; butlerIds: string[] }
-  | { kind: 'post_groupme'; jobId: string }
+  /** jobId is absent for recruiting posts that aren't about one job. */
+  | { kind: 'post_groupme'; jobId?: string }
   | { kind: 'mark_posted'; leadId: string }
+  /** An in-app message to these Butlers (profile nudges, check-ins). */
+  | { kind: 'notify_butlers'; butlerIds: string[] }
+  /** An email to someone who isn't a job's neighbor: a business, a website client. */
+  | { kind: 'send_email'; to: string; subject: string; leadId?: string; leadStatus?: LeadStatus }
+  /** Text the admin posts by hand somewhere (a Nextdoor post, a note to a partner school). */
+  | { kind: 'manual_post'; where: string }
+  /** A policy change, written as a new agent_config version. `patch` replaces whole top-level keys. */
+  | { kind: 'apply_config'; patch: Record<string, unknown>; summary: string }
   | { kind: 'acknowledge' };
 
 export interface SafetyResult {
@@ -140,8 +167,13 @@ export interface Decision {
 export interface AgentTask {
   id: string;
   type: TaskType;
-  /** 'job' or 'lead', and the id of that row. A pointer, not a copy of the neighbour's details. */
-  subjectType: 'job' | 'lead';
+  /**
+   * 'job' or 'lead' and that row's id — a pointer, not a copy of the
+   * neighbour's details. 'system' tasks (recruiting findings, the weekly
+   * review, config proposals) carry a short descriptor such as
+   * "gap|Barrington|Snow shoveling" instead.
+   */
+  subjectType: 'job' | 'lead' | 'system';
   subjectId: string;
   idempotencyKey: string;
   state: TaskState;

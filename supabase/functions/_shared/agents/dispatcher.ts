@@ -7,11 +7,15 @@
  * (localStorage) share every rule about routing, retries and expiry.
  */
 import type { AgentConfig } from './config.ts';
+import type { AnalystInput } from './analyst.ts';
+import { planAnalyst, reviewDue, runProposal, runWeeklyReview } from './analyst.ts';
+import { planOutreach, runOutreach, runWebBrief, runWebLead } from './b2b.ts';
 import { runCare } from './care.ts';
 import { runIntake } from './intake.ts';
 import { runLeadScout } from './leadScout.ts';
 import type { AgentContext, Llm } from './llm.ts';
 import { runMatch } from './matchmaker.ts';
+import { planRecruiting, runRecruiter } from './recruiter.ts';
 import { normalizeService, ruleSafety } from './rules.ts';
 import type { AgentButler, AgentId, AgentJob, AgentRun, AgentTask, Draft, Lead, NewTask, SafetyResult, TaskType } from './types.ts';
 
@@ -39,6 +43,11 @@ export interface DispatcherIO {
   setLeadStatus(id: string, status: Lead['status']): Promise<void>;
   logRuns(runs: AgentRun[]): Promise<void>;
   monthSpendUsd(): Promise<number>;
+  /** Prospects and website inquiries (and pasted posts), for outreach planning and the weekly review. */
+  loadLeads(): Promise<Lead[]>;
+  /** Tasks created or updated in the last `days`, for the Analyst. Only read once a week. */
+  recentTasks(days: number): Promise<AgentTask[]>;
+  recentRuns(days: number): Promise<AgentRun[]>;
 }
 
 export interface RunSummary {
@@ -58,6 +67,12 @@ const AGENT_FOR: Record<TaskType, AgentId> = {
   MATCH_ESCALATE: 'matchmaker',
   LEAD_TRIAGE: 'lead_scout',
   JOB_FOLLOWUP: 'care',
+  SUPPLY_CHECK: 'recruiter',
+  B2B_OUTREACH: 'b2b',
+  WEB_LEAD: 'web_studio',
+  WEB_BRIEF: 'web_studio',
+  WEEKLY_REVIEW: 'analyst',
+  CONFIG_PROPOSAL: 'analyst',
 };
 
 const MAX_ATTEMPTS = 3;
@@ -109,7 +124,10 @@ export function retryDelayMinutes(attempts: number): number {
 }
 
 function deadlineFor(draft: Draft, config: AgentConfig, now: Date): string {
-  const hours = draft.agent === 'lead_scout' ? config.deadlinesHours.lead : config.deadlinesHours.default;
+  const hours =
+    draft.agent === 'lead_scout' ? config.deadlinesHours.lead
+      : draft.agent === 'analyst' ? config.deadlinesHours.review
+        : config.deadlinesHours.default;
   return new Date(+now + hours * HOUR).toISOString();
 }
 
@@ -120,13 +138,36 @@ async function processTask(
   ctx: AgentContext,
   jobs: AgentJob[],
   butlers: AgentButler[],
+  analystInput: () => Promise<AnalystInput>,
 ): Promise<{ draft: Draft; priority: number } | { close: string }> {
   const { config } = io;
   const now = io.now();
 
+  if (task.subjectType === 'system') {
+    switch (task.type) {
+      case 'SUPPLY_CHECK':
+        return runRecruiter(task.subjectId, jobs, butlers, ctx, config, now);
+      case 'WEEKLY_REVIEW':
+        return runWeeklyReview(await analystInput(), ctx, config, now);
+      case 'CONFIG_PROPOSAL':
+        return runProposal(task.subjectId, await analystInput(), config, now);
+      default:
+        return { close: `No agent handles ${task.type}` };
+    }
+  }
+
   if (task.subjectType === 'lead') {
     const lead = await io.loadLead(task.subjectId);
     if (!lead) return { close: 'Lead no longer exists' };
+    if (task.type === 'B2B_OUTREACH' || task.type === 'WEB_LEAD' || task.type === 'WEB_BRIEF') {
+      const step = Number(task.idempotencyKey.split(':').pop()) || 0;
+      const result =
+        task.type === 'B2B_OUTREACH' ? await runOutreach(lead, step, ctx, config)
+          : task.type === 'WEB_LEAD' ? await runWebLead(lead, ctx, config)
+            : await runWebBrief(lead, ctx, config);
+      if ('close' in result && result.leadStatus) await io.setLeadStatus(lead.id, result.leadStatus);
+      return result;
+    }
     const result = await runLeadScout(lead, await io.postedReplies(), ctx, config, now, lead.author);
     if (!result.draft) {
       await io.setLeadStatus(lead.id, 'dropped');
@@ -174,12 +215,22 @@ export async function runDispatcher(io: DispatcherIO, options: { limit?: number 
     summary.notes.push(`Monthly AI budget of $${config.monthlyBudgetUsd} reached — drafting from templates until next month.`);
   }
 
-  const jobs = await io.loadJobs();
-  const planned = planTasks(jobs, await io.taskIndex(), config, now);
+  const [jobs, butlers, leads, index] = await Promise.all([io.loadJobs(), io.loadButlers(), io.loadLeads(), io.taskIndex()]);
+
+  // The Analyst's inputs are a few hundred rows; read them only on the run that needs them.
+  let analystCache: Promise<AnalystInput> | null = null;
+  const analystInput = () =>
+    (analystCache ??= Promise.all([io.recentTasks(31), io.recentRuns(31)]).then(([tasks, runs]) => ({ jobs, tasks, runs, leads })));
+
+  const planned = [
+    ...planTasks(jobs, index, config, now),
+    ...planRecruiting(jobs, butlers, index, config, now),
+    ...planOutreach(leads, index, config, now),
+  ];
+  if (reviewDue(index, config, now)) planned.push(...planAnalyst(await analystInput(), index, config, now));
   if (planned.length) await io.insertTasks(planned);
   summary.enqueued = planned.length;
 
-  const butlers = await io.loadButlers();
   const claimed = await io.claimTasks(options.limit ?? 10);
 
   for (const task of claimed) {
@@ -198,7 +249,7 @@ export async function runDispatcher(io: DispatcherIO, options: { limit?: number 
     };
 
     try {
-      const result = await processTask(task, io, ctx, jobs, butlers);
+      const result = await processTask(task, io, ctx, jobs, butlers, analystInput);
       summary.processed++;
       if ('close' in result) {
         await io.saveTask({ ...task, state: 'closed', closedReason: result.close, lastError: '', updatedAt: io.now().toISOString() });

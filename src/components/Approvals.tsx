@@ -1,8 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useQuery } from '@/lib/useQuery';
 import { isShared } from '@/lib/store';
-import { decide, getAgentTasks, runAgentsNow, submitLead } from '@/lib/agents/api';
-import type { AgentTask, Draft, RunSummary } from '@/lib/agents/api';
+import { decide, getAgentTasks, getProspects, runAgentsNow, setProspectStatus, submitLead, submitProspect } from '@/lib/agents/api';
+import type { AgentTask, Draft, Lead, ProspectInput, RunSummary } from '@/lib/agents/api';
 import { REJECT_REASONS } from '@agents/decisions.ts';
 import { inputClass, labelClass, textareaClass } from '@/components/FormControls';
 
@@ -20,6 +20,10 @@ const AGENT_LABEL: Record<Draft['agent'], string> = {
   lead_scout: 'Lead Scout',
   voice: 'Voice',
   care: 'Care',
+  recruiter: 'Recruiter',
+  b2b: 'B2B',
+  web_studio: 'Web Studio',
+  analyst: 'Analyst',
 };
 
 const CHANNEL_LABEL: Record<Draft['channel'], string> = {
@@ -45,6 +49,9 @@ const FLAG_LABEL: Record<string, string> = {
   supply_gap: 'Not enough Butlers',
   too_similar_to_past_reply: 'Too similar to a past reply',
   incident: 'Incident',
+  outside_area: 'Outside our towns?',
+  budget_unknown: 'No budget given',
+  long: 'Long',
 };
 
 const TIER_STYLE = {
@@ -61,8 +68,20 @@ function approveLabel(draft: Draft): string {
     case 'assign_butler': return 'Assign';
     case 'post_groupme': return 'Post to GroupMe';
     case 'mark_posted': return 'I posted it';
+    case 'notify_butlers': return draft.action.butlerIds.length > 1 ? `Send to ${draft.action.butlerIds.length} Butlers` : 'Send to Butler';
+    case 'send_email': return 'Send email';
+    case 'manual_post': return 'I posted it';
+    case 'apply_config': return 'Apply change';
     case 'acknowledge': return 'Got it';
   }
+}
+
+/** What the text box is for. Emails to businesses name who they go to. */
+function textLabel(draft: Draft): string {
+  if (draft.action.kind === 'send_email') return `Email to ${draft.action.to}`;
+  if (draft.action.kind === 'manual_post') return `Post on ${draft.action.where} — you post it from your account`;
+  if (draft.action.kind === 'post_groupme' && !draft.action.jobId) return 'GroupMe post to the Butler group';
+  return CHANNEL_LABEL[draft.channel];
 }
 
 function dueIn(deadline: string | null): string {
@@ -180,6 +199,8 @@ export default function Approvals() {
         </p>
       )}
 
+      <Prospects />
+
       {recent.length > 0 && (
         <details className="bg-white border border-black/10 rounded-[14px] px-4 py-3">
           <summary className="cursor-pointer text-[13px] font-medium text-ink">Recently handled ({recent.length})</summary>
@@ -204,6 +225,174 @@ export default function Approvals() {
         </details>
       )}
     </section>
+  );
+}
+
+const SEGMENT_LABEL: Record<string, string> = {
+  realtor: 'Real estate agent',
+  property_manager: 'Property manager',
+  hoa: 'HOA',
+  small_business: 'Small business',
+};
+
+const STATUS_LABEL: Record<Lead['status'], string> = {
+  new: 'Not contacted yet',
+  contacted: 'Emailed',
+  replied: 'Replied',
+  won: 'Won',
+  dropped: 'Closed',
+};
+
+/**
+ * Businesses to reach out to and website inquiries. The agents draft the
+ * emails as cards above; this is where you record how each one answered,
+ * which is what stops follow-ups and starts a website build brief.
+ */
+function Prospects() {
+  const query = useQuery(getProspects);
+  const [adding, setAdding] = useState(false);
+  const prospects = query.data ?? [];
+
+  return (
+    <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4 flex flex-col gap-3">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="max-w-[62ch]">
+          <h3 className="text-[14.5px] font-bold text-ink">Businesses and website inquiries</h3>
+          <p className="text-[12.5px] text-black/50 mt-0.5">
+            Add a realtor, property manager, HOA or small business and the agents draft the outreach and follow-ups. Website inquiries get a proposal at the right package.
+          </p>
+        </div>
+        {!adding && <button onClick={() => setAdding(true)} className={lightBtn}>Add a business</button>}
+      </div>
+      {adding && <ProspectForm onDone={() => setAdding(false)} />}
+      {query.error && <p className="text-[12.5px] text-[#8c2f1c]">{query.error}</p>}
+      {prospects.length > 0 && (
+        <div className="flex flex-col">
+          {prospects.map((lead) => <ProspectRow key={lead.id} lead={lead} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProspectRow({ lead }: { lead: Lead }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  async function mark(status: 'replied' | 'won' | 'dropped') {
+    setBusy(true);
+    setError('');
+    try {
+      await setProspectStatus(lead.id, status);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'That did not work.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  const open = lead.status === 'new' || lead.status === 'contacted' || lead.status === 'replied';
+  return (
+    <div className="flex items-start justify-between gap-3 flex-wrap border-t border-black/5 py-2.5 text-[12.5px]">
+      <div className="min-w-0">
+        <div className="text-ink font-medium">
+          {lead.details.org || 'Unnamed'}{' '}
+          <span className="text-black/45 font-normal">
+            · {lead.channel === 'web' ? 'Website inquiry' : SEGMENT_LABEL[lead.details.segment ?? ''] ?? 'Business'}
+            {lead.town ? ` · ${lead.town}` : ''}
+          </span>
+        </div>
+        <div className="text-black/45">{STATUS_LABEL[lead.status]}{lead.details.email ? ` · ${lead.details.email}` : ''}</div>
+        {error && <div className="text-[#8c2f1c]">{error}</div>}
+      </div>
+      {open && (
+        <div className="flex gap-1.5 flex-wrap">
+          {lead.status !== 'replied' && <button disabled={busy} onClick={() => mark('replied')} className={lightBtn}>They replied</button>}
+          <button disabled={busy} onClick={() => mark('won')} className={lightBtn}>Won</button>
+          <button disabled={busy} onClick={() => mark('dropped')} className={lightBtn}>Not interested</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProspectForm({ onDone }: { onDone: () => void }) {
+  const [form, setForm] = useState<ProspectInput>({
+    kind: 'b2b', org: '', segment: 'realtor', contactName: '', email: '', town: '', budget: '', website: '', notes: '', author: rememberedName(),
+  });
+  const [status, setStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const set = (key: keyof ProspectInput) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!form.org.trim() || !form.author.trim()) return;
+    setBusy(true);
+    setStatus(null);
+    try {
+      try {
+        localStorage.setItem(REPLY_AS_KEY, form.author.trim());
+      } catch {
+        /* not remembered next time */
+      }
+      const summary = await submitProspect(form);
+      setStatus({ kind: 'ok', text: summary.awaitingApproval ? 'Draft ready — see the new card above.' : `No draft yet. ${summaryLine(summary)}` });
+      setForm((f) => ({ ...f, org: '', contactName: '', email: '', town: '', budget: '', website: '', notes: '' }));
+    } catch (cause) {
+      setStatus({ kind: 'error', text: cause instanceof Error ? cause.message : 'Could not save that.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const field = (id: keyof ProspectInput, label: string, props: Record<string, unknown> = {}) => (
+    <div className="flex-1 min-w-[180px]">
+      <label className={labelClass} htmlFor={`prospect-${id}`}>{label}</label>
+      <input id={`prospect-${id}`} className={inputClass} value={form[id]} onChange={set(id)} {...props} />
+    </div>
+  );
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 border-t border-black/10 pt-3">
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex-1 min-w-[180px]">
+          <label className={labelClass} htmlFor="prospect-kind">What is it?</label>
+          <select id="prospect-kind" className={inputClass} value={form.kind} onChange={set('kind')}>
+            <option value="b2b">A business to reach out to</option>
+            <option value="web">A website inquiry</option>
+          </select>
+        </div>
+        {form.kind === 'b2b' && (
+          <div className="flex-1 min-w-[180px]">
+            <label className={labelClass} htmlFor="prospect-segment">Kind of business</label>
+            <select id="prospect-segment" className={inputClass} value={form.segment} onChange={set('segment')}>
+              {Object.entries(SEGMENT_LABEL).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+            </select>
+          </div>
+        )}
+        {field('org', 'Business name', { required: true, placeholder: 'Oak Street Realty' })}
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        {field('contactName', 'Contact name', { placeholder: 'Dana Lee' })}
+        {field('email', 'Their email', { type: 'email', placeholder: 'dana@example.com' })}
+        {field('town', 'Town', { placeholder: 'Barrington' })}
+      </div>
+      {form.kind === 'web' && (
+        <div className="flex gap-3 flex-wrap">
+          {field('budget', 'Budget, if they said', { placeholder: '$1,000' })}
+          {field('website', 'Current website, if any', { placeholder: 'example.com' })}
+        </div>
+      )}
+      <div>
+        <label className={labelClass} htmlFor="prospect-notes">{form.kind === 'web' ? 'What they want the site to do' : 'What you know about them'}</label>
+        <textarea id="prospect-notes" className={`${textareaClass} min-h-[80px]`} value={form.notes} onChange={set('notes')}
+          placeholder={form.kind === 'web' ? 'Bakery in Barrington, wants a menu, photos and a way to order cakes online' : 'Lists about 6 homes a month around Barrington; saw their yard sign on Main St'} />
+      </div>
+      {field('author', 'Write it as (your first name)', { required: true, placeholder: 'Blaise' })}
+      {status && <p className={`text-[12.5px] ${status.kind === 'ok' ? 'text-[#215c31]' : 'text-[#8c2f1c]'}`}>{status.text}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={busy || !form.org.trim() || !form.author.trim()} className={darkBtn}>{busy ? 'Drafting\u2026' : 'Add and draft'}</button>
+        <button type="button" onClick={onDone} className={lightBtn}>Close</button>
+      </div>
+    </form>
   );
 }
 
@@ -381,7 +570,7 @@ function ApprovalCard({ task }: { task: AgentTask }) {
       {sendsText && (
         <div className="mt-3">
           <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
-            <label htmlFor={`draft-${task.id}`} className="text-[12px] font-medium text-[#44474C]">{CHANNEL_LABEL[draft.channel]}</label>
+            <label htmlFor={`draft-${task.id}`} className="text-[12px] font-medium text-[#44474C]">{textLabel(draft)}</label>
             <div className="flex gap-1.5">
               {draft.variants.length > 1 && draft.variants.map((variant, i) => (
                 <button key={i} type="button" onClick={() => setText(variant)} className={`h-[26px] px-2.5 rounded-[6px] text-[11.5px] border ${text === variant ? 'bg-ink text-white border-ink' : 'border-black/15 text-ink hover:bg-black/5'}`}>
@@ -397,7 +586,7 @@ function ApprovalCard({ task }: { task: AgentTask }) {
           </div>
           <textarea
             id={`draft-${task.id}`}
-            className={`${textareaClass} min-h-[96px] text-[13.5px]`}
+            className={`${textareaClass} ${draft.channel === 'internal' && text.length > 400 ? 'min-h-[260px] font-mono text-[12.5px]' : 'min-h-[96px] text-[13.5px]'}`}
             value={text}
             onChange={(e) => setText(e.target.value)}
             readOnly={draft.channel === 'internal'}

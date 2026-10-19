@@ -10,3 +10,6 @@ export * from './care.ts';
 export * from './dispatcher.ts';
 export * from './decisions.ts';
 export * from './rows.ts';
+export * from './recruiter.ts';
+export * from './b2b.ts';
+export * from './analyst.ts';

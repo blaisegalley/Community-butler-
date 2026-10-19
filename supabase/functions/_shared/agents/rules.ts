@@ -242,3 +242,24 @@ export function similarity(a: string, b: string): number {
   for (const item of x) if (y.has(item)) shared++;
   return shared / (x.size + y.size - shared);
 }
+
+// ------------------------------------------------------------- calendar keys
+
+/** "2026-W43" — idempotency keys for once-a-week work (recruiting nudges, the weekly review). */
+export function isoWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((+d - +yearStart) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+/** "2026-10-19" in UTC. */
+export function dayKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+export function daysBetween(fromIso: string, to: Date): number {
+  return (+to - +new Date(fromIso)) / 86400000;
+}

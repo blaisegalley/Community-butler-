@@ -79,10 +79,11 @@ export interface JobRowForAgents {
   assigned_at: string | null;
   completed_at: string | null;
   rating: number | null;
+  reject_note: string | null;
 }
 
 export const AGENT_JOB_COLUMNS =
-  'id,service,name,phone,email,address,scheduled_for,budget,details,submitted_at,status,assigned_butler_id,assigned_at,completed_at,rating';
+  'id,service,name,phone,email,address,scheduled_for,budget,details,submitted_at,status,assigned_butler_id,assigned_at,completed_at,rating,reject_note';
 
 export function jobFromRow(row: JobRowForAgents): AgentJob {
   return {
@@ -101,6 +102,7 @@ export function jobFromRow(row: JobRowForAgents): AgentJob {
     assignedAt: row.assigned_at,
     completedAt: row.completed_at,
     ...(row.rating === null ? {} : { rating: row.rating }),
+    ...(row.reject_note ? { rejectNote: row.reject_note } : {}),
   };
 }
 
@@ -111,11 +113,14 @@ export interface LeadRow {
   town: string;
   author: string;
   status: Lead['status'];
+  details: Record<string, string> | null;
   created_at: string;
 }
 
+export const LEAD_COLUMNS = 'id,channel,text,town,author,status,details,created_at';
+
 export function leadFromRow(row: LeadRow): Lead {
-  return { id: row.id, channel: row.channel, text: row.text, town: row.town, author: row.author, status: row.status, createdAt: row.created_at };
+  return { id: row.id, channel: row.channel, text: row.text, town: row.town, author: row.author, status: row.status, details: row.details ?? {}, createdAt: row.created_at };
 }
 
 /**
@@ -148,4 +153,15 @@ export function approvedTexts(tasks: AgentTask[]): string[] {
     if (last?.finalText) out.push({ text: last.finalText, edited: last.decision === 'edit', at: last.at });
   }
   return out.sort((a, b) => Number(b.edited) - Number(a.edited) || b.at.localeCompare(a.at)).map((e) => e.text);
+}
+
+const LEAD_PROGRESS: Record<Lead['status'], number> = { new: 0, contacted: 1, replied: 2, won: 3, dropped: 3 };
+
+/**
+ * Whether sending a card should move a lead to `next`. Statuses only move
+ * forward: a proposal emailed after an admin already marked the client Won
+ * (they said yes on the phone) must not set them back to "contacted".
+ */
+export function leadStatusAdvances(current: Lead['status'], next: Lead['status']): boolean {
+  return LEAD_PROGRESS[next] > LEAD_PROGRESS[current];
 }

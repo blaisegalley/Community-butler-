@@ -26,8 +26,26 @@ export interface PriceRange {
   high: number;
 }
 
+export interface Season {
+  service: string;
+  label: string;
+  /** 1-12 */
+  startMonth: number;
+  startDay: number;
+  leadWeeks: number;
+}
+
+export interface WebTier {
+  name: string;
+  price: number;
+  maxPages: number;
+  includes: string[];
+}
+
 export interface AgentConfig {
   businessName: string;
+  /** Linked from recruiting posts ("sign up at …/auth/"). */
+  siteUrl: string;
   businessPhone: string;
   schoolShortName: string;
   model: string;
@@ -49,16 +67,47 @@ export interface AgentConfig {
     overloadOpenJobs: number;
   };
   escalation: { firstHours: number; secondHours: number; snowFirstHours: number; snowSecondHours: number };
-  deadlinesHours: { lead: number; default: number };
+  deadlinesHours: { lead: number; default: number; review: number };
   followupWindowDays: number;
   voice: { blocklist: string[]; maxWords: Record<string, number> };
   killSwitches: Partial<Record<string, boolean>>;
+  recruiting: {
+    /** Butlers available per open-or-expected job below which we recruit. */
+    gapRatio: number;
+    urgentRatio: number;
+    /** Above this, there are more Butlers than work: push demand instead. */
+    surplusRatio: number;
+    nudgeAfterDays: number;
+    pendingReviewHours: number;
+    inactiveDays: number;
+    seasons: Season[];
+  };
+  b2b: {
+    /** Days after the first email to send follow-ups 2 and 3. */
+    followupDays: number[];
+    maxTouches: number;
+    /** What we offer each kind of business. Used as facts in the outreach email. */
+    playbook: Record<string, string>;
+  };
+  webStudio: { minBudget: number; revisionRounds: number; tiers: WebTier[]; qaChecklist: string[] };
+  analyst: {
+    /** Waitlisted requests from one town in 30 days before proposing we serve it. */
+    expansionThreshold: number;
+    /** Approved-as-is rate below which an agent's drafts get flagged for a prompt review. */
+    lowApprovalRate: number;
+    minSample: number;
+    /** Unclaimed-job escalations in 14 days before proposing an easier assignment threshold. */
+    escalationsBeforeTuning: number;
+    /** The weekly review is planned on the first run after this UTC hour on Monday (12 = 7am Chicago). */
+    reviewHourUtc: number;
+  };
 }
 
 export const SERVICES = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanout', 'Dog walking', 'Odd job'];
 
 export const DEFAULT_CONFIG: AgentConfig = {
   businessName: 'Community Butler',
+  siteUrl: 'https://thecommunitybutler.com',
   businessPhone: '(224) 633-9328',
   schoolShortName: 'BHS',
   model: 'claude-opus-5-5',
@@ -102,7 +151,7 @@ export const DEFAULT_CONFIG: AgentConfig = {
     overloadOpenJobs: 3,
   },
   escalation: { firstHours: 12, secondHours: 24, snowFirstHours: 2, snowSecondHours: 4 },
-  deadlinesHours: { lead: 24, default: 72 },
+  deadlinesHours: { lead: 24, default: 72, review: 168 },
   followupWindowDays: 7,
   voice: {
     blocklist: [
@@ -113,6 +162,48 @@ export const DEFAULT_CONFIG: AgentConfig = {
     maxWords: { nextdoor: 90, instagram: 90, groupme: 60, email: 160, butler_app: 60 },
   },
   killSwitches: {},
+  recruiting: {
+    gapRatio: 1.5,
+    urgentRatio: 1,
+    surplusRatio: 4,
+    nudgeAfterDays: 2,
+    pendingReviewHours: 48,
+    inactiveDays: 30,
+    seasons: [
+      { service: 'Yard work', label: 'leaf season', startMonth: 10, startDay: 1, leadWeeks: 6 },
+      { service: 'Snow shoveling', label: 'snow season', startMonth: 12, startDay: 1, leadWeeks: 6 },
+    ],
+  },
+  b2b: {
+    followupDays: [5, 12],
+    maxTouches: 3,
+    playbook: {
+      realtor: 'Pre-listing yard cleanups, junk hauling before photos or a move-out, and snow shoveling before showings and open houses.',
+      property_manager: 'Turnover cleanouts and junk hauling between tenants, plus seasonal leaf and snow work for small buildings.',
+      hoa: 'Leaf raking and snow on common walkways, and extra hands for community cleanup days.',
+      small_business: 'Storefront snow and sidewalk cleanup, help moving inventory, and an affordable website built by students ($700-$1,250).',
+    },
+  },
+  // PLACEHOLDER inclusions; prices are the ones the business has set.
+  webStudio: {
+    minBudget: 700,
+    revisionRounds: 2,
+    tiers: [
+      { name: 'Starter', price: 700, maxPages: 3, includes: ['Up to 3 pages (home, services, contact)', 'Mobile-friendly design', 'Contact form', 'Basic search setup (title, description, Google Business link)'] },
+      { name: 'Standard', price: 950, maxPages: 6, includes: ['Up to 6 pages', 'Everything in Starter', 'Photo gallery or portfolio', 'Booking or menu link', 'Reviews section'] },
+      { name: 'Plus', price: 1250, maxPages: 10, includes: ['Up to 10 pages', 'Everything in Standard', 'Blog or news page you can update', 'Online booking or a simple store'] },
+    ],
+    qaChecklist: [
+      'Every page works on a phone (check on a real phone, not just a narrow window)',
+      'Contact form sends to the client and they confirmed receiving a test',
+      'All text is the client\'s approved copy; no placeholder text left',
+      'Images have alt text; color contrast passes a checker',
+      'Page titles and descriptions are set; Google Business link added',
+      'Pages load in under 3 seconds on a phone connection',
+      'Client owns the domain and hosting account, and has the logins',
+    ],
+  },
+  analyst: { expansionThreshold: 5, lowApprovalRate: 0.6, minSample: 5, escalationsBeforeTuning: 3, reviewHourUtc: 12 },
 };
 
 /** The brand voice, as the drafting and voice-scoring prompts see it. Stable text: it is part of the cached prompt prefix. */

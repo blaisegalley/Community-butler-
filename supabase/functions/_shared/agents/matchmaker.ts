@@ -18,7 +18,8 @@ export interface RankedButler {
   why: string[];
 }
 
-function prefMatches(prefs: string[], service: string): boolean {
+/** Whether a Butler's listed job types cover this service ("Cleanouts" matches "Cleanout"). */
+export function prefMatches(prefs: string[], service: string): boolean {
   const target = service.toLowerCase().replace(/s$/, '');
   return prefs.some((p) => {
     const pref = p.toLowerCase().replace(/s$/, '');
