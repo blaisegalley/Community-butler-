@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CG Tables — Handmade mahjong tables</title>
+<meta name="description" content="CG Tables builds mahjong tables by hand, made to order and delivered across the Barrington area. Reserve yours for $0.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='2' width='22' height='28' rx='4' fill='%23f9f6f1' stroke='%230f0f0e' stroke-width='2'/%3E%3Cg fill='none' stroke='%23c8322b' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9.5' y='11' width='13' height='8' rx='1'/%3E%3Cpath d='M16 6v20'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+@font-face {
+  font-family: "Archivo";
+  src: url(assets/fonts/archivo.woff2) format("woff2");
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-display: block;
+}
+@font-face {
+  font-family: "Inter";
+  src: url(assets/fonts/inter.woff2) format("woff2");
+  font-weight: 100 900;
+  font-display: block;
+}
+
+:root {
+  --mode: mob;
+
+  --paper: #f3efe4;
+  --ink: #0f0f0e;
+  --card-dark: #151515;
+  --card-cream: #f9f6f1;
+  --red: #c8322b;
+  --yellow: #e9c46a;
+  --blue: #3f8f6b; /* jade — class names kept from the reference */
+
+  --nav-bg: #ffffff;
+  --nav-bar: #ffffff;
+  --nav-fg: var(--ink);
+  --nav-muted: #62615d;
+  --nav-line: rgba(15, 15, 14, .08);
+  --nav-rule: rgba(15, 15, 14, .16);
+  --nav-search: #e8e7e2;
+  --nav-cta: var(--ink);
+  --nav-cta-fg: #fff;
+
+  --col: 205.33px;
+  --gap: 13px;
+  --pitch: 282.5px;
+  --r: 22px;
+
+  --img-sculpt: url(assets/img/sculpt.webp);
+  --img-man: url(assets/img/man.webp);
+  --img-visit: url(assets/img/visit.webp);
+  --img-sil: url(assets/img/sil.webp);
+  --grain: url(https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/40b7fef3-410d-4ef3-bd67-0a2fc7ee5a1d.svg);
+
+  --display: "Archivo", "Arial Black", Impact, system-ui, sans-serif;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  --glyph-dragon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23c8322b' stroke-width='8' stroke-linecap='round' opacity='.3'%3E%3Crect x='18' y='32' width='64' height='36' rx='4'/%3E%3Cpath d='M50 10v80'/%3E%3C/g%3E%3C/svg%3E");
+  --glyph-bamboo: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg opacity='.24'%3E%3Cg fill='%23f3efe4'%3E%3Crect x='28' y='10' width='13' height='80' rx='6.5'/%3E%3Crect x='59' y='10' width='13' height='80' rx='6.5'/%3E%3C/g%3E%3Cpath d='M28 37h13M28 63h13M59 37h13M59 63h13' stroke='%233f8f6b' stroke-width='3'/%3E%3C/g%3E%3C/svg%3E");
+  --glyph-dots: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%230f0f0e' stroke-width='5' opacity='.2'%3E%3Ccircle cx='26' cy='26' r='13'/%3E%3Ccircle cx='50' cy='50' r='13'/%3E%3Ccircle cx='74' cy='74' r='13'/%3E%3C/g%3E%3Cg fill='%230f0f0e' opacity='.2'%3E%3Ccircle cx='26' cy='26' r='4'/%3E%3Ccircle cx='50' cy='50' r='4'/%3E%3Ccircle cx='74' cy='74' r='4'/%3E%3C/g%3E%3C/svg%3E");
+  --glyph-frame: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23f3efe4' opacity='.14'%3E%3Crect x='22' y='14' width='56' height='72' rx='6' stroke-width='5'/%3E%3Crect x='32' y='24' width='36' height='52' rx='3' stroke-width='3'/%3E%3C/g%3E%3C/svg%3E");
+}
+@media (min-width: 560px) and (min-aspect-ratio: 1/1) { :root { --mode: mob-l; } }
+@media (min-width: 600px) and (min-height: 820px) and (max-aspect-ratio: 21/20) { :root { --mode: tab-p; } }
+@media (min-width: 900px) and (min-height: 540px) and (min-aspect-ratio: 21/20) { :root { --mode: tab-l; } }
+@media (min-width: 1097px) and (min-aspect-ratio: 27/25) { :root { --mode: desk; } }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: geometricPrecision;
+}
+html.desk body, html.tab body, html.mob body { overflow: hidden; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+:focus-visible { outline: 2px solid #3b82f6; outline-offset: 3px; }
+svg { display: block; flex: none; }
+
+/* ---------- mosaic ---------- */
+.grid { position: absolute; z-index: 1; }
+.col {
+  position: absolute;
+  width: var(--col);
+  display: flex;
+  flex-direction: column;
+  animation: colDown 14.6s linear infinite;
+  will-change: transform;
+}
+.c2, .x1, .x3 { animation-name: colUp; }
+.x1, .x2, .x3 { display: none; }
+@keyframes colDown { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, -50%, 0); } }
+@keyframes colUp { from { transform: translate3d(0, -50%, 0); } to { transform: translate3d(0, 0, 0); } }
+@media (prefers-reduced-motion: reduce) { .col { animation: none; } }
+
+.cell {
+  position: relative;
+  flex: none;
+  height: calc(var(--pitch) - var(--gap));
+  margin-bottom: var(--gap);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.ph::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--pic) center / cover no-repeat;
+}
+/* hero tiles (.f-*) are framed tighter than their repeats so neighbours never look identical */
+.f-sculpt::before { background-size: 132%; background-position: 40% 30%; }
+.f-man::before { background-size: 118%; background-position: 60% 55%; }
+.f-sil::before { background-size: 170%; background-position: 18% 88%; }
+.i-sculpt { --pic: var(--img-sculpt); }
+.i-man { --pic: var(--img-man); }
+.i-visit { --pic: var(--img-visit); }
+.i-sil { --pic: var(--img-sil); }
+.f-visit { background: linear-gradient(90deg, #c6c5c3, #9b9a98 55%, #7a7977); }
+.f-visit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(0, 0, 0, .26), rgba(0, 0, 0, 0) 13%);
+}
+
+.red { background: var(--red); }
+.yellow { background: var(--yellow); }
+.blue { background: var(--blue); }
+.cream { background: var(--card-cream); box-shadow: inset 0 0 0 1px #e9e6df; }
+.dark { background: var(--card-dark); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14); }
+.red::after, .yellow::after, .blue::after, .cream::after, .dark::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--grain);
+  opacity: .13;
+  mix-blend-mode: multiply;
+}
+.dark::after { mix-blend-mode: screen; opacity: .035; }
+.cream::before, .blue::before, .yellow::before, .dark::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--glyph) center / 42% no-repeat;
+}
+.cream { --glyph: var(--glyph-dragon); }
+.blue { --glyph: var(--glyph-bamboo); }
+.yellow { --glyph: var(--glyph-dots); }
+.dark { --glyph: var(--glyph-frame); }
+
+/* ---------- header ---------- */
+.hdr {
+  position: absolute;
+  z-index: 5;
+  background: var(--nav-bg);
+  color: var(--nav-fg);
+  border-radius: 0 0 22px 22px;
+  box-shadow: 0 0 0 1px var(--nav-line), 0 16px 36px -24px rgba(15, 15, 14, .30);
+}
+.util {
+  position: relative;
+  height: 40px;
+  border-bottom: 1px solid var(--nav-line);
+  display: flex;
+  align-items: center;
+}
+.ph-link {
+  position: absolute;
+  top: 0;
+  height: 39px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 1.15;
+  font-weight: 500;
+  color: var(--nav-muted);
+}
+.ph-link:hover { color: var(--nav-fg); }
+.p1 { left: 24px; }
+.p2 { left: 333px; }
+.vr { position: absolute; left: 313px; top: 9px; bottom: 9px; width: 1px; background: var(--nav-rule); }
+.unav {
+  margin-left: auto;
+  height: 39px;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.02;
+}
+.unav a:hover, .mnav a:hover { opacity: .62; }
+.search {
+  width: 39px;
+  height: 39px;
+  display: grid;
+  place-items: center;
+  background: var(--nav-search);
+  border-radius: 5px 0 0 5px;
+}
+.main-row {
+  height: 101px;
+  display: flex;
+  align-items: center;
+  padding-left: 24px;
+}
+.logo { display: flex; flex-direction: column; }
+.logo-t {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 31px;
+  font-stretch: 85%;
+  line-height: .9;
+  letter-spacing: -.01em;
+  -webkit-text-stroke: .35px currentColor;
+}
+.logo-s {
+  margin-top: 6px;
+  font-size: 8.6px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  color: var(--nav-muted);
+}
+.mnav {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  margin-left: 64px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.mnav-tables { display: flex; align-items: center; gap: 9px; }
+.dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+.sep { width: 1px; height: 26px; background: var(--nav-rule); }
+.menu-btn { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.cta { margin-left: auto; margin-right: 19px; display: flex; align-items: center; gap: 4px; }
+.pill {
+  height: 63px;
+  min-width: 116px;
+  padding: 0 26px;
+  border-radius: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--nav-cta);
+  color: var(--nav-cta-fg);
+  font-size: 17px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.circ {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--nav-cta);
+  color: var(--nav-cta-fg);
+}
+.pill:hover, .circ:hover { background: #2a2a28; }
+
+/* menu panel (mob + tab; a dropdown on desk) */
+.panel { display: none; }
+.hdr[data-open] .panel { display: block; }
+.panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 8px;
+  padding: 18px 20px 20px;
+  background: var(--nav-bg);
+  border-radius: 22px;
+  box-shadow: 0 0 0 1px var(--nav-line), 0 24px 48px -24px rgba(15, 15, 14, .35);
+}
+.panel nav { display: flex; flex-direction: column; }
+.panel nav a {
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--nav-line);
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 24px;
+  font-stretch: 90%;
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+}
+.pcontact { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 16px 0; font-size: 14px; font-weight: 500; color: var(--nav-muted); }
+.panel .pill { width: 100%; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; z-index: 2; }
+.hero h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 80px;
+  font-stretch: 84%;
+  line-height: 75.3px;
+  letter-spacing: -.06em;
+  text-transform: uppercase;
+  -webkit-text-stroke: 1.1px currentColor;
+}
+.hero h1 .ln { display: block; }
+.hero h1 .ln > span { display: block; font-size: .95em; letter-spacing: -.05em; }
+.hero p { margin: 0; font-size: 18px; line-height: 26.6px; }
+.hero p b { font-weight: 700; }
+.acts { display: flex; align-items: center; gap: 4px; }
+.acts .link {
+  margin-left: 26px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.acts .link .dot { width: 32px; height: 32px; }
+
+/* ---------- desktop: 1280×800 reference canvas, cover-scaled ---------- */
+html.desk .stage {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: calc(var(--W) * 1px);
+  height: calc(var(--H) * 1px);
+  transform: scale(var(--s));
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+html.desk .hdr { left: 40px; right: 40px; top: 0; height: 142px; }
+html.desk .hdr .panel { left: auto; width: 360px; }
+html.desk .grid { right: 62px; top: 0; bottom: 0; width: calc(3 * var(--col) + 2 * var(--gap)); }
+html.desk .c1, html.tab-l .c1 { left: 0; top: 86px; }
+html.desk .c2, html.tab-l .c2 { left: calc(var(--col) + var(--gap)); top: -11.5px; }
+html.desk .c3, html.tab-l .c3 { left: calc(2 * (var(--col) + var(--gap))); top: 86.5px; }
+html.desk .x1 { left: calc(-1 * (var(--col) + var(--gap))); top: 37px; }
+html.desk .x2 { left: calc(-2 * (var(--col) + var(--gap))); top: -60px; }
+html.desk .x3 { left: calc(-3 * (var(--col) + var(--gap))); top: 52px; }
+html.desk.ex1 .x1, html.desk.ex2 .x2, html.desk.ex3 .x3 { display: flex; }
+html.desk .hero { position: absolute; left: 86px; top: calc(200px + (var(--H, 800) - 800) * .5px); width: 480px; }
+html.desk .hero p, html.tab-l .hero p { position: absolute; top: 344px; width: 460px; }
+html.desk .acts, html.tab-l .acts { position: absolute; top: 460px; }
+
+/* ---------- tablet ---------- */
+html.tab { --tm: clamp(20px, 3vw, 40px); --hh: 142px; --h1: clamp(48px, 7vw, 80px); }
+html.tab .stage { position: relative; height: 100svh; overflow: hidden; }
+html.tab .hdr { left: var(--tm); right: var(--tm); top: 0; height: var(--hh); }
+html.tab .unav a, html.tab .mnav > :not(.menu-btn) { display: none; }
+html.tab .mnav { margin-left: auto; }
+html.tab .cta { margin-left: 22px; }
+
+html.tab-l .grid { right: var(--tm); top: 0; bottom: 0; --gap: 11px; --col: calc((50vw - 2 * var(--gap)) / 3); --pitch: calc(var(--col) * 1.3125 + var(--gap)); --r: 18px; width: 50vw; }
+html.tab-l .hero { position: absolute; left: calc(var(--tm) + 18px); top: calc(var(--hh) + max(28px, (100svh - var(--hh) - 540px) * .5)); width: calc(50vw - var(--tm) - 48px); }
+html.tab-l .hero h1 { font-size: clamp(44px, 5.4vw, 72px); line-height: .94; }
+html.tab-l .hero p { top: auto; position: static; width: auto; margin-top: 26px; font-size: 17px; line-height: 25px; }
+html.tab-l .acts { position: static; margin-top: 26px; }
+
+html.tab-p .stage { display: grid; grid-template-rows: var(--hh) auto minmax(0, 1fr); }
+html.tab-p .hdr { grid-row: 1; position: relative; left: auto; right: auto; margin: 0 var(--tm); }
+html.tab-p .hero { grid-row: 2; }
+html.tab-p .hero { padding: clamp(28px, 4.5vh, 56px) calc(var(--tm) + 12px) clamp(24px, 3.5vh, 44px); }
+html.tab-p .hero h1 { font-size: clamp(56px, 9.6vw, 92px); line-height: .94; }
+html.tab-p .hero p { margin-top: 24px; max-width: 560px; }
+html.tab-p .acts { margin-top: 24px; }
+html.tab-p .grid { grid-row: 3; position: relative; margin: 0 var(--tm); --gap: 12px; --col: calc((100vw - 2 * var(--tm) - 2 * var(--gap)) / 3); --pitch: calc(var(--col) * 1.3125 + var(--gap)); --r: 20px; overflow: hidden; border-radius: var(--r) var(--r) 0 0; }
+html.tab-p .c1 { left: 0; top: calc(var(--pitch) * -.18); }
+html.tab-p .c2 { left: calc(var(--col) + var(--gap)); top: calc(var(--pitch) * -.52); }
+html.tab-p .c3 { left: calc(2 * (var(--col) + var(--gap))); top: calc(var(--pitch) * -.1); }
+
+/* ---------- mobile ---------- */
+html.mob {
+  --tm: 14px;
+  --hp: 16px;
+  --row: 64px;
+  --hh: 64px;
+  --h1: clamp(38px, 11.6vw, 58px);
+  --fp: 15px;
+  --btn: 52px;
+}
+html.mob .stage {
+  position: relative;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+html.mob .hdr { position: relative; flex: none; margin: 0 var(--tm); height: var(--hh); }
+html.mob .util, html.mob .cta, html.mob .mnav > :not(.menu-btn) { display: none; }
+html.mob .main-row { height: var(--row); padding: 0 var(--hp); display: grid; grid-template-columns: 1fr auto; }
+html.mob .logo-t { font-size: 25px; }
+html.mob .logo-s { font-size: 7.4px; margin-top: 4px; }
+html.mob .mnav { margin: 0; }
+html.mob .hero { order: 1; flex: none; padding: clamp(18px, 4vh, 34px) calc(var(--tm) + 4px) clamp(16px, 3vh, 26px); }
+html.mob .hero h1 { font-size: var(--h1); line-height: .93; -webkit-text-stroke-width: .6px; }
+html.mob .hero p { margin-top: 14px; font-size: var(--fp); line-height: 1.45; }
+html.mob .acts { margin-top: 16px; }
+html.mob .pill { height: var(--btn); min-width: 0; padding: 0 22px; border-radius: 18px; font-size: 16px; }
+html.mob .acts .circ { width: var(--btn); height: var(--btn); }
+html.mob .acts .link { margin-left: 14px; font-size: 15px; gap: 9px; }
+html.mob .acts .link .dot { width: 28px; height: 28px; }
+html.mob .grid {
+  order: 2;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  margin: 0 var(--tm);
+  --gw: calc(100vw - 2 * var(--tm));
+  --gap: 8px;
+  --col: calc((var(--gw) - 2 * var(--gap)) / 3);
+  --pitch: calc(var(--col) * 1.3125 + var(--gap));
+  --r: 14px;
+  overflow: hidden;
+  border-radius: var(--r) var(--r) 0 0;
+}
+html.mob .c1 { left: 0; top: calc(var(--pitch) * -.2); }
+html.mob .c2 { left: calc(var(--col) + var(--gap)); top: calc(var(--pitch) * -.55); }
+html.mob .c3 { left: calc(2 * (var(--col) + var(--gap))); top: calc(var(--pitch) * -.12); }
+html.mob .f-visit::after { display: none; }
+
+html.mob-l { --hh: 56px; --row: 56px; --lgw: 44vw; --h1: clamp(30px, 8.4vh, 40px); --fp: 13.5px; --btn: 44px; }
+html.mob-l .stage { display: grid; grid-template-columns: minmax(0, 1fr) var(--lgw); grid-template-rows: var(--hh) minmax(0, 1fr); }
+html.mob-l .hdr { grid-column: 1; grid-row: 1; margin-right: 0; }
+html.mob-l .hero { grid-column: 1; grid-row: 2; padding: clamp(10px, 4vh, 22px) 22px 12px calc(var(--tm) + 4px); }
+html.mob-l .hero h1 { line-height: .94; }
+html.mob-l .hero p { margin-top: 10px; max-width: 420px; }
+html.mob-l .acts { margin-top: 12px; }
+html.mob-l .grid { grid-column: 2; grid-row: 1 / 3; margin: 0 var(--tm) 0 0; --gw: calc(var(--lgw) - var(--tm)); --gap: 7px; border-radius: 0; }
+html.mob-l .c1 { top: calc(var(--hh) - var(--pitch) * .6); }
+html.mob-l .c2 { top: calc(var(--hh) - var(--pitch) * 1.05); }
+html.mob-l .c3 { top: calc(var(--hh) - var(--pitch) * .3); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="grid" aria-hidden="true">
+    <div class="col x3"><div class="cell ph i-man"></div><div class="cell blue"></div><div class="cell dark"></div><div class="cell ph i-sculpt"></div><div class="cell yellow"></div></div>
+    <div class="col x2"><div class="cell yellow"></div><div class="cell ph i-sil"></div><div class="cell cream"></div><div class="cell red"></div><div class="cell ph i-visit"></div></div>
+    <div class="col x1"><div class="cell blue"></div><div class="cell ph i-man"></div><div class="cell red"></div><div class="cell ph i-sculpt"></div><div class="cell cream"></div></div>
+    <div class="col c1"><div class="cell red"></div><div class="cell ph i-sculpt f-sculpt"></div><div class="cell ph i-man f-man"></div><div class="cell blue"></div><div class="cell ph i-visit"></div></div>
+    <div class="col c2"><div class="cell yellow"></div><div class="cell ph i-visit f-visit visit"></div><div class="cell dark"></div><div class="cell ph i-sil"></div><div class="cell red"></div></div>
+    <div class="col c3"><div class="cell blue"></div><div class="cell cream"></div><div class="cell ph i-sil f-sil"></div><div class="cell yellow"></div><div class="cell ph i-sculpt"></div></div>
+  </div>
+
+  <header class="hdr">
+    <div class="util">
+      <a class="ph-link p1" href="tel:+17733016638" aria-label="Call CG Tables at (773) 301-6638">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
+        <span>Call : (773)<br>301-6638</span>
+      </a>
+      <span class="vr" aria-hidden="true"></span>
+      <a class="ph-link p2" href="mailto:cfgalley@yahoo.com" aria-label="Email CG Tables at cfgalley@yahoo.com">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4.5" width="19" height="15" rx="2"/><path d="m3 6 9 7 9-7"/></svg>
+        <span>Email : cfgalley<br>@yahoo.com</span>
+      </a>
+      <nav class="unav" aria-label="Useful links">
+        <a href="#tables" data-open-drawer="tables">Tables</a>
+        <a href="#how" data-open-drawer="how">How it<br>works</a>
+        <a href="#tables" data-open-drawer="tables">Gallery</a>
+        <a href="#faq" data-open-drawer="faq">FAQ</a>
+        <a href="#faq" data-open-drawer="faq">Barrington<br>area</a>
+        <button class="search" type="button" data-open-drawer="tables" aria-label="Search tables">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="5.5" cy="5.5" r="4.4"/><path d="m8.8 8.8 3.6 3.6" stroke-linecap="round"/></svg>
+        </button>
+      </nav>
+    </div>
+    <div class="main-row">
+      <a class="logo" href="#" aria-label="CG Tables — home">
+        <span class="logo-t">CG TABLES</span>
+        <span class="logo-s">HANDMADE MAHJONG TABLES</span>
+      </a>
+      <nav class="mnav" aria-label="Main navigation">
+        <a class="mnav-tables" href="#tables" data-open-drawer="tables">Tables
+          <span class="dot" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+        </a>
+        <span class="sep" aria-hidden="true"></span>
+        <a href="#how" data-open-drawer="how">How it works</a>
+        <a href="#tables" data-open-drawer="tables">Gallery</a>
+        <button class="menu-btn" type="button" aria-expanded="false" aria-controls="menu-panel">
+          <svg width="22" height="14" viewBox="0 0 22 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M1 1h20M1 7h20M1 13h20"/></svg>
+          <span>Menu</span>
+        </button>
+      </nav>
+      <div class="cta">
+        <a class="pill" href="#tables" data-open-drawer="tables">Preorder</a>
+        <a class="circ" href="#tables" data-open-drawer="tables" aria-label="Preorder a table">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="panel" id="menu-panel">
+      <nav aria-label="Menu">
+        <a href="#tables" data-open-drawer="tables">Tables</a>
+        <a href="#how" data-open-drawer="how">How it works</a>
+        <a href="#tables" data-open-drawer="tables">Gallery</a>
+        <a href="#faq" data-open-drawer="faq">FAQ</a>
+        <a href="#faq" data-open-drawer="faq">Barrington area</a>
+      </nav>
+      <div class="pcontact">
+        <a href="tel:+17733016638">(773) 301-6638</a>
+        <a href="mailto:cfgalley@yahoo.com">cfgalley@yahoo.com</a>
+      </div>
+      <a class="pill" href="#tables" data-open-drawer="tables">Preorder</a>
+    </div>
+  </header>
+
+  <main class="hero">
+    <h1 class="masking">
+      <span class="ln"><span>Tables made</span></span>
+      <span class="ln"><span>for the</span></span>
+      <span class="ln"><span>click of</span></span>
+      <span class="ln"><span>tiles</span></span>
+    </h1>
+    <p>CG Tables builds mahjong tables by hand — made to order, delivered across the <b>Barrington area</b>. Reserve yours today for $0.</p>
+    <div class="acts">
+      <a class="pill" href="#tables" data-open-drawer="tables">Reserve yours</a>
+      <a class="circ" href="#tables" data-open-drawer="tables" aria-label="Reserve a table">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>
+      </a>
+      <a class="link" href="#tables" data-open-drawer="tables">See the tables
+        <span class="dot" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+      </a>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const de = document.documentElement;
+  const MODES = ["desk", "mob", "mob-l", "tab", "tab-l", "tab-p"];
+  const readMode = () => getComputedStyle(de).getPropertyValue("--mode").trim() || "mob";
+
+  function fit() {
+    const mode = readMode();
+    de.classList.remove(...MODES, "ex1", "ex2", "ex3", "tall");
+    de.classList.add(mode);
+    if (mode.startsWith("tab")) de.classList.add("tab");
+    if (mode.startsWith("mob")) de.classList.add("mob");
+    if (mode !== "desk") {
+      ["--s", "--W", "--H"].forEach((p) => de.style.removeProperty(p));
+      return;
+    }
+    const vw = innerWidth, vh = innerHeight;
+    const s = vw / vh > 1280 / 800 ? vh / 800 : vw / 1280;
+    const W = vw / s, H = vh / s;
+    de.style.setProperty("--s", s);
+    de.style.setProperty("--W", W);
+    de.style.setProperty("--H", H);
+    if (H > 845) de.classList.add("tall");
+    const extra = Math.max(0, Math.min(3, Math.floor((W - 1294) / 218.33)));
+    for (let i = 1; i <= extra; i++) de.classList.add("ex" + i);
+  }
+
+  fit();
+  addEventListener("resize", fit);
+  addEventListener("orientationchange", fit);
+})();
+</script>
+</body>
+</html>
