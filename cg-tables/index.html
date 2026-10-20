@@ -6,6 +6,13 @@
 <title>CG Tables — Handmade mahjong tables</title>
 <meta name="description" content="CG Tables builds mahjong tables by hand, made to order and delivered across the Barrington area. Reserve yours for $0.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='5' y='2' width='22' height='28' rx='4' fill='%23f9f6f1' stroke='%230f0f0e' stroke-width='2'/%3E%3Cg fill='none' stroke='%23c8322b' stroke-width='2.4' stroke-linecap='round'%3E%3Crect x='9.5' y='11' width='13' height='8' rx='1'/%3E%3Cpath d='M16 6v20'/%3E%3C/g%3E%3C/svg%3E">
+<script>
+  // Load entrance: hide the animated pieces before first paint (removed by the main script, or after 4s at worst).
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    document.documentElement.classList.add("intro", "hold");
+    setTimeout(() => document.documentElement.classList.remove("intro", "hold"), 4000);
+  }
+</script>
 <style>
 @font-face {
   font-family: "Archivo";
@@ -443,6 +450,14 @@ html.mob-l .grid { grid-column: 2; grid-row: 1 / 3; margin: 0 var(--tm) 0 0; --g
 html.mob-l .c1 { top: calc(var(--hh) - var(--pitch) * .6); }
 html.mob-l .c2 { top: calc(var(--hh) - var(--pitch) * 1.05); }
 html.mob-l .c3 { top: calc(var(--hh) - var(--pitch) * .3); }
+
+/* ---------- load entrance ---------- */
+html.intro .hdr { transform: translateY(calc(-100% - 48px)); }
+html.intro .util > *, html.intro .logo, html.intro .mnav > *, html.intro .cta > *,
+html.intro .hero p, html.intro .acts > *, html.intro .col { opacity: 0; }
+html.intro .hero h1 .ln > span { transform: translateY(110%); }
+html.hold .col { animation-play-state: paused; }
+.hero h1.masking .ln { clip-path: inset(-.2em -30% 0 -6%); }
 </style>
 </head>
 <body>
@@ -568,6 +583,61 @@ html.mob-l .c3 { top: calc(var(--hh) - var(--pitch) * .3); }
   fit();
   addEventListener("resize", fit);
   addEventListener("orientationchange", fit);
+
+  // Marquee: each column carries its 5 cells twice so translating by -50% loops seamlessly.
+  document.querySelectorAll(".col").forEach((col) => {
+    [...col.children].forEach((cell) => col.appendChild(cell.cloneNode(true)));
+  });
+
+  entrance();
+
+  function entrance() {
+    const h1 = document.querySelector(".hero h1");
+    const finish = () => {
+      h1.classList.remove("masking");
+      de.dataset.entrance = "done";
+    };
+    if (!de.classList.contains("intro")) {
+      de.classList.remove("hold");
+      finish();
+      return;
+    }
+    const EXPO = "cubic-bezier(.16, 1, .3, 1)";
+    const QUART = "cubic-bezier(.25, 1, .5, 1)";
+    const HANDOFF = 2.1, CRUISE = 3.42, EXTRA = 8;
+    const quintOut = (x) => 1 - Math.pow(1 - x, 5);
+    const anims = [];
+    const run = (el, keyframes, delay, duration, easing) => {
+      anims.push(el.animate(keyframes, { delay: delay * 1000, duration: duration * 1000, easing, fill: "backwards" }));
+    };
+    const rise = (y) => [{ opacity: 0, transform: `translateY(${y}px)` }, { opacity: 1, transform: "none" }];
+
+    run(document.querySelector(".hdr"), [{ transform: "translateY(calc(-100% - 48px))" }, { transform: "none" }], 0, .95, EXPO);
+    document.querySelectorAll(".util > *").forEach((el, i) => run(el, [{ opacity: 0 }, { opacity: 1 }], .32 + i * .06, .6, QUART));
+    run(document.querySelector(".logo"), rise(-10), .42, .7, QUART);
+    document.querySelectorAll(".mnav > *").forEach((el, i) => run(el, rise(-8), .48 + i * .05, .6, QUART));
+    document.querySelectorAll(".cta > *").forEach((el, i) => run(el, rise(-8), .62 + i * .05, .6, QUART));
+    document.querySelectorAll(".hero h1 .ln > span").forEach((el, i) => run(el, [{ transform: "translateY(110%)" }, { transform: "none" }], .3 + i * .085, 1, EXPO));
+    run(document.querySelector(".hero p"), rise(14), .75, .9, QUART);
+    document.querySelectorAll(".acts > *").forEach((el, i) => run(el, rise(12), .9 + i * .07, .8, QUART));
+
+    // Columns arrive already cruising: linear marquee motion plus an 8% quint-out drift, so at
+    // HANDOFF the position and speed match the paused CSS marquee exactly, which then resumes.
+    [...document.querySelectorAll(".col")].filter((c) => c.offsetParent !== null).forEach((col, i) => {
+      const up = getComputedStyle(col).animationName === "colUp";
+      const frames = [];
+      for (let k = 0; k <= 42; k++) {
+        const t = (k / 42) * HANDOFF;
+        const lag = CRUISE * (HANDOFF - t) + EXTRA * (1 - quintOut(t / HANDOFF));
+        frames.push({ transform: `translate3d(0, ${up ? -50 - lag : lag}%, 0)`, opacity: Math.min(1, t / .9) });
+      }
+      run(col, frames, 0, HANDOFF, "linear");
+      anims[anims.length - 1].finished.then(() => de.classList.remove("hold"), () => {});
+    });
+
+    de.classList.remove("intro");
+    Promise.allSettled(anims.map((a) => a.finished)).then(finish);
+  }
 })();
 </script>
 </body>
