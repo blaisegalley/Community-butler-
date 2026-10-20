@@ -41,3 +41,32 @@ select cron.schedule(
 --   select jobname, schedule, active from cron.job;
 -- And see what happened on recent runs:
 --   select * from cron.job_run_details order by start_time desc limit 10;
+
+-- ------------------------------------------------------------ agents
+--
+-- The agent dispatcher, every 5 minutes. It only drafts: new job requests
+-- become approval cards, approved jobs get a matching card, and so on.
+-- Nothing reaches a neighbour or a student until an admin approves the
+-- card in /admin -> Approvals. Run this after migrations/004_agents.sql
+-- and after deploying the agent-dispatcher function. Same placeholders
+-- as above.
+
+select cron.unschedule('community-butler-agents')
+where exists (
+  select 1 from cron.job where jobname = 'community-butler-agents'
+);
+
+select cron.schedule(
+  'community-butler-agents',
+  '*/5 * * * *',
+  $$
+  select net.http_post(
+    url := 'https://<PROJECT-REF>.supabase.co/functions/v1/agent-dispatcher',
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'x-cron-secret', '<CRON-SECRET>'
+    ),
+    body := '{}'::jsonb
+  );
+  $$
+);

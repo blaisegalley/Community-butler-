@@ -87,6 +87,14 @@ function emitChange(): void {
   listeners.forEach((listener) => listener());
 }
 
+/**
+ * For changes made somewhere this module can't see — an edge function
+ * that approved a job on the server, say. Every view refetches.
+ */
+export function refreshAll(): void {
+  emitChange();
+}
+
 // ---------- reads ----------
 //
 // Each of these is a one-line pass-through with its type written out.

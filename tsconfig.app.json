@@ -19,7 +19,7 @@
     "noFallthroughCasesInSwitch": true,
 
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": { "@/*": ["src/*"], "@agents/*": ["supabase/functions/_shared/agents/*"] }
   },
   "include": ["src"]
 }
