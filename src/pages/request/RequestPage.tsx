@@ -5,15 +5,21 @@ import SiteFooter from '@/components/SiteFooter';
 import { addJob } from '@/lib/store';
 import NotifyButton from '@/components/NotifyButton';
 import { fieldWrap, inputClass, labelClass, primaryBtn, selectClass, textareaClass } from '@/components/FormControls';
+import { SERVICE_LINKS, SNOW_SEASON } from '@/lib/services';
 
-const SERVICES = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanout', 'Dog walking', 'Odd job'];
+const SERVICES = ['Yard work', 'Snow shoveling', SNOW_SEASON, 'Moving help', 'Junk hauling', 'Cleanout', 'Dog walking', 'Odd job'];
+
+function initialService(): string {
+  const params = new URLSearchParams(window.location.search);
+  return SERVICE_LINKS[params.get('service') ?? ''] ?? '';
+}
 
 export default function RequestPage() {
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
-    service: '',
+    service: initialService(),
     name: '',
     phone: '',
     email: '',
@@ -100,6 +106,11 @@ export default function RequestPage() {
                     <option key={s} value={s}>{s}</option>
                   ))}
                 </select>
+                {form.service === SNOW_SEASON && (
+                  <p className="text-black/45 text-[13px] mt-2">
+                    Your driveway and walkway, shoveled after every snowfall this winter. A manager will confirm the price and details before anything is booked.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
