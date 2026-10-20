@@ -470,6 +470,132 @@ html.intro .hero p, html.intro .acts > *, html.intro .col { opacity: 0; }
 html.intro .hero h1 .ln > span { transform: translateY(110%); }
 html.hold .col { animation-play-state: paused; }
 .hero h1.masking .ln { clip-path: inset(-.2em -30% 0 -6%); }
+
+/* ---------- preorder drawer ---------- */
+.drawer { position: fixed; inset: 0; z-index: 50; font-family: var(--sans); }
+.drawer[hidden] { display: none; }
+.drawer-backdrop { position: absolute; inset: 0; background: rgba(15, 15, 14, .38); opacity: 0; transition: opacity .45s cubic-bezier(.25, 1, .5, 1); }
+.drawer-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(480px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  background: var(--nav-bg);
+  color: var(--ink);
+  border-radius: 22px;
+  box-shadow: 0 0 0 1px var(--nav-line), 0 30px 60px -30px rgba(15, 15, 14, .45);
+  transform: translateX(calc(100% + 24px));
+  transition: transform .6s cubic-bezier(.16, 1, .3, 1);
+  outline: none;
+}
+.drawer.is-open .drawer-backdrop { opacity: 1; }
+.drawer.is-open .drawer-panel { transform: none; }
+@media (prefers-reduced-motion: reduce) { .drawer-panel, .drawer-backdrop { transition: none; } }
+.drawer-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px 24px;
+  border-bottom: 1px solid var(--nav-line);
+}
+.drawer-head h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 30px;
+  font-stretch: 85%;
+  letter-spacing: -.03em;
+  text-transform: uppercase;
+}
+.drawer-x { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: var(--nav-search); }
+.drawer-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 18px 24px 28px; }
+.drawer-lede { margin: 0 0 18px; font-size: 15px; line-height: 1.5; color: var(--nav-muted); }
+.models { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.model {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 16px;
+  padding: 10px;
+  border-radius: 18px;
+  background: var(--paper);
+}
+.model img { width: 112px; height: 140px; object-fit: cover; border-radius: 12px; background: #d9d3c4; }
+.model > div { display: flex; flex-direction: column; padding: 4px 4px 2px 0; }
+.model h3 {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 22px;
+  font-stretch: 88%;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+}
+.model-desc { margin: 6px 0 0; font-size: 14px; line-height: 1.4; }
+.model-price { margin: 6px 0 12px; font-size: 12.5px; font-weight: 600; color: var(--nav-muted); }
+.model button {
+  margin-top: auto;
+  align-self: flex-start;
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+}
+.model button:hover { background: #2a2a28; }
+.model button:disabled { opacity: .55; cursor: progress; }
+.status:empty { display: none; }
+.status { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: #fbeee9; font-size: 14px; line-height: 1.45; }
+.status a { font-weight: 700; text-decoration: underline; }
+.drawer-body h3.sec {
+  margin: 30px 0 12px;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 20px;
+  font-stretch: 88%;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+}
+.steps { margin: 0; padding: 0; list-style: none; counter-reset: s; display: grid; gap: 10px; }
+.steps li { counter-increment: s; display: grid; grid-template-columns: 30px 1fr; gap: 12px; font-size: 14.5px; line-height: 1.45; }
+.steps li::before {
+  content: counter(s);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--blue);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+}
+.faq { margin: 0; }
+.faq dt { font-weight: 700; font-size: 14.5px; margin-top: 12px; }
+.faq dd { margin: 4px 0 0; font-size: 14.5px; line-height: 1.45; color: #3b3a37; }
+.drawer-foot { margin: 26px 0 0; padding-top: 16px; border-top: 1px solid var(--nav-line); font-size: 13px; line-height: 1.5; color: var(--nav-muted); }
+.drawer-contact { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: 14px; font-weight: 600; }
+@media (max-width: 559px), (max-height: 520px) and (max-width: 900px) {
+  .drawer-panel {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 90svh;
+    border-radius: 22px 22px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    transform: translateY(100%);
+  }
+  .drawer-panel { height: 90svh; }
+}
+@media (max-height: 520px) and (max-width: 900px) { .drawer-panel { height: auto; top: 8px; max-height: none; } }
+@media (max-width: 559px) { .model { grid-template-columns: 92px 1fr; } .model img { width: 92px; height: 118px; } }
 </style>
 </head>
 <body>
@@ -565,6 +691,49 @@ html.hold .col { animation-play-state: paused; }
   </main>
 </div>
 
+<div class="drawer" id="drawer" hidden>
+  <div class="drawer-backdrop" data-close></div>
+  <section class="drawer-panel" role="dialog" aria-modal="true" aria-labelledby="drawer-title" tabindex="-1">
+    <div class="drawer-head">
+      <h2 id="drawer-title">Reserve a table</h2>
+      <button class="drawer-x" type="button" data-close aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m3 3 10 10M13 3 3 13"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <p class="drawer-lede">Every table is built by hand, to order. Reserve yours for $0 — nothing is charged online.</p>
+      <section id="tables" aria-label="The tables">
+        <ul class="models"></ul>
+        <div class="status" role="status" aria-live="polite"></div>
+      </section>
+      <section id="how" aria-labelledby="how-title">
+        <h3 class="sec" id="how-title">How it works</h3>
+        <ol class="steps">
+          <li>Pick a table and reserve it for $0.</li>
+          <li>We call you within 2 days to confirm finish, size and price.</li>
+          <li>Your table is built by hand, then ready for local pickup or delivery in the Barrington area.</li>
+        </ol>
+      </section>
+      <section id="faq" aria-labelledby="faq-title">
+        <h3 class="sec" id="faq-title">Questions</h3>
+        <dl class="faq">
+          <dt>How much does a table cost?</dt>
+          <dd>Price is confirmed at consultation — every table is made to order.</dd>
+          <dt>Does reserving cost anything?</dt>
+          <dd>No. Reserving is $0 and nothing is charged online.</dd>
+          <dt>Where do you deliver?</dt>
+          <dd>Local pickup or delivery in the Barrington area.</dd>
+        </dl>
+      </section>
+      <p class="drawer-foot">Local pickup or delivery in the Barrington area. We'll contact you within 2 days to confirm finish, size and price.</p>
+      <div class="drawer-contact">
+        <a href="tel:+17733016638">(773) 301-6638</a>
+        <a href="mailto:cfgalley@yahoo.com">cfgalley@yahoo.com</a>
+      </div>
+    </div>
+  </section>
+</div>
+
 <script>
 (() => {
   const de = document.documentElement;
@@ -603,6 +772,248 @@ html.hold .col { animation-play-state: paused; }
 
   entrance();
   menu();
+
+  /* wix — the store behind Reserve. WIX_CLIENT_ID is the site's public OAuth client id (it only
+     mints anonymous visitor tokens, so it is safe in page source). Empty = preview, no store yet.
+     Request shapes follow wix-headless-templates shared/rest/client.ts and storefront/rest/cart.ts. */
+  const WIX_CLIENT_ID = "";
+  const WIX_API = "https://www.wixapis.com";
+  const WIX_STORES_APP_ID = "215238eb-22a5-4c36-9e7b-e7c08025e04e";
+  const MODELS = [
+    { id: null, name: "The Classic", description: "Square hardwood frame with a felt playing surface.", image: "assets/img/sculpt.webp" },
+    { id: null, name: "The Fold", description: "Folding legs, portable, stores flat.", image: "assets/img/visit.webp" },
+    { id: null, name: "The Heirloom", description: "Hardwood with drawers and built-in tile racks.", image: "assets/img/sil.webp" },
+  ];
+  const TOKEN_KEY = `wix-visitor-${WIX_CLIENT_ID}`;
+  let tokenPromise = null;
+
+  async function mintTokens(body) {
+    const res = await fetch(`${WIX_API}/oauth2/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: WIX_CLIENT_ID, ...body }),
+    });
+    if (!res.ok) throw new Error(`Wix auth failed (${res.status}).`);
+    const data = await res.json();
+    return { accessToken: data.access_token, refreshToken: data.refresh_token, expiresAt: Date.now() + data.expires_in * 1000 };
+  }
+
+  // The visitor token is the shopper's identity (their cart lives on it): mint once, persist, refresh.
+  function wixToken() {
+    tokenPromise ??= (async () => {
+      let t = null;
+      try { t = JSON.parse(localStorage.getItem(TOKEN_KEY)); } catch {}
+      if (t && t.expiresAt - 60000 > Date.now()) return t.accessToken;
+      let fresh = null;
+      if (t?.refreshToken) {
+        try { fresh = await mintTokens({ grantType: "refresh_token", refreshToken: t.refreshToken }); } catch {}
+      }
+      fresh ??= await mintTokens({ grantType: "anonymous" });
+      try { localStorage.setItem(TOKEN_KEY, JSON.stringify(fresh)); } catch {}
+      return fresh.accessToken;
+    })().finally(() => { tokenPromise = null; });
+    return tokenPromise;
+  }
+
+  // Raw access token in the header, no "Bearer " prefix. Throws on any non-2xx with its status.
+  async function wixRequest(path, { method = "POST", body } = {}) {
+    const res = await fetch(WIX_API + path, {
+      method,
+      headers: { Authorization: await wixToken(), "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = new Error(`${method} ${path} failed (${res.status}).`);
+      err.status = res.status;
+      throw err;
+    }
+    return res.status === 204 ? null : res.json();
+  }
+
+  const rawId = (raw) => raw?._id ?? raw?.id ?? "";
+
+  // Any Wix media value → a browser-loadable URL (shared/rest/media.ts imgSrc).
+  function imgSrc(value, width, height) {
+    const rawOf = (v) => !v ? "" : typeof v === "string" ? v
+      : v.image != null && typeof v.image === "object" ? rawOf(v.image)
+      : (typeof v.image === "string" ? v.image : null) ?? v.url ?? v.id ?? "";
+    const v = rawOf(value);
+    if (!v) return "";
+    let file = "";
+    if (v.startsWith("wix:image://")) file = v.slice("wix:image://v1/".length).split("/")[0].split("#")[0];
+    else if (/^[\w-]+~mv2\.[a-z0-9]+$/i.test(v)) file = v;
+    else file = (v.match(/^https:\/\/static\.wixstatic\.com\/media\/([^/?#]+)/) ?? [])[1] ?? "";
+    return file ? `https://static.wixstatic.com/media/${file}/v1/fill/w_${width},h_${height},al_c,q_90/${file}` : v;
+  }
+
+  // The three tables as the store holds them, in the order above; the static list when there is no
+  // store yet or it can't be reached.
+  async function loadModels() {
+    if (!WIX_CLIENT_ID) return MODELS;
+    try {
+      const res = await wixRequest("/stores/v3/products/search", {
+        body: { fields: ["CURRENCY", "MEDIA_ITEMS_INFO", "MIN_PRICE_VARIANT", "DISCOUNT_INFO"], search: { cursorPaging: { limit: 24 } } },
+      });
+      const products = res?.products ?? [];
+      const models = products.map((p) => {
+        const known = MODELS.find((m) => m.name === p.name);
+        return {
+          id: rawId(p),
+          name: p.name ?? "",
+          description: known?.description ?? "",
+          image: imgSrc(p.media?.main, 448, 560) || known?.image || "",
+        };
+      });
+      const rank = (m) => { const i = MODELS.findIndex((k) => k.name === m.name); return i < 0 ? 99 : i; };
+      return models.length ? models.sort((a, b) => rank(a) - rank(b)) : MODELS;
+    } catch (e) {
+      console.warn("CG Tables: catalog unavailable, showing the static list.", e);
+      return MODELS;
+    }
+  }
+
+  // One table per checkout: empty the visitor's cart, add this table, open a redirect session on
+  // the cart (the cart's id is the checkout id) and return Wix's hosted checkout URL.
+  async function reserve(productId) {
+    if (!productId) throw new Error("No store product for this table.");
+    let current = null;
+    try {
+      current = (await wixRequest("/ecom/v2/carts/current", { method: "GET" }))?.cart ?? null;
+    } catch (e) {
+      if (e.status !== 404) throw e;
+    }
+    const stale = (current?.lineItems ?? []).map(rawId).filter(Boolean);
+    if (stale.length) await wixRequest("/ecom/v2/carts/current/remove-line-items", { body: { lineItemIds: stale } });
+    const added = await wixRequest("/ecom/v2/carts/current/add-line-items", {
+      body: { catalogItems: [{ quantity: 1, catalogReference: { catalogItemId: productId, appId: WIX_STORES_APP_ID } }] },
+    });
+    const cart = added?.cart;
+    const line = (cart?.lineItems ?? []).find((l) => l.source?.catalogReference?.catalogItemId === productId);
+    if (!line || (line.status && line.status !== "IN_STOCK") || line.quantityInfo?.confirmedQuantity === 0) {
+      throw new Error("This table couldn't be added to the cart.");
+    }
+    const origin = location.origin;
+    const res = await wixRequest("/headless/v1/redirect-session", {
+      body: { ecomCheckout: { checkoutId: rawId(cart) }, callbacks: { postFlowUrl: `${origin}/`, thankYouPageUrl: `${origin}/` } },
+    });
+    const url = res?.redirectSession?.fullUrl;
+    if (!url) throw new Error("Checkout couldn't start: no redirect URL returned.");
+    return url;
+  }
+
+  function drawer() {
+    const root = document.getElementById("drawer");
+    const panel = root.querySelector(".drawer-panel");
+    const list = root.querySelector(".models");
+    const status = root.querySelector(".status");
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    let opener = null;
+    let models = null;
+    let pending = false;
+
+    const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const render = (items) => {
+      list.innerHTML = items.map((m) => `
+        <li class="model"${m.id ? ` data-id="${esc(m.id)}"` : ""}>
+          <img src="${esc(m.image)}" alt="${esc(m.name)}" width="112" height="140" loading="lazy" decoding="async">
+          <div>
+            <h3>${esc(m.name)}</h3>
+            <p class="model-desc">${esc(m.description)}</p>
+            <p class="model-price">Price confirmed at consultation</p>
+            <button type="button">Reserve for $0</button>
+          </div>
+        </li>`).join("");
+    };
+    const setBusy = (busy) => {
+      pending = busy;
+      list.querySelectorAll("button").forEach((b) => (b.disabled = busy));
+    };
+
+    render(MODELS);
+    const ensureModels = () => {
+      models ??= loadModels().then((items) => { if (!pending) render(items); return items; });
+      return models;
+    };
+
+    const isOpen = () => !root.hidden;
+    function open(section, from) {
+      opener = from;
+      ensureModels();
+      if (!isOpen()) {
+        root.hidden = false;
+        root.offsetWidth; // start the slide from the closed position
+        root.classList.add("is-open");
+      }
+      panel.focus({ preventScroll: true });
+      const target = section && section !== "tables" ? document.getElementById(section) : null;
+      root.querySelector(".drawer-body").scrollTop = target ? target.offsetTop - 16 : 0;
+    }
+    function close() {
+      if (!isOpen()) return;
+      root.classList.remove("is-open");
+      const hide = () => { root.hidden = true; };
+      reduced.matches ? hide() : setTimeout(hide, 450);
+      const back = opener && opener.getClientRects().length ? opener : document.querySelector(".menu-btn");
+      back?.focus({ preventScroll: true });
+    }
+
+    document.addEventListener("click", (e) => {
+      const o = e.target.closest("[data-open-drawer]");
+      if (o) {
+        e.preventDefault();
+        open(o.dataset.openDrawer, o);
+        return;
+      }
+      if (isOpen() && e.target.closest("[data-close]")) close();
+    });
+
+    root.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        close();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const f = [...panel.querySelectorAll("a[href], button:not([disabled])")].filter((el) => el.getClientRects().length);
+      if (!f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+
+    list.addEventListener("click", async (e) => {
+      const btn = e.target.closest("button");
+      if (!btn || pending) return;
+      const id = btn.closest(".model")?.dataset.id || null;
+      status.textContent = "";
+      if (!WIX_CLIENT_ID) {
+        status.textContent = "Preview: Reserve opens the Wix checkout here once the store is connected.";
+        return;
+      }
+      setBusy(true);
+      try {
+        location.assign(await reserve(id));
+      } catch (err) {
+        console.warn("CG Tables: checkout failed.", err);
+        setBusy(false);
+        status.innerHTML = 'Couldn\'t start checkout — call or email us: <a href="tel:+17733016638">(773) 301-6638</a> · <a href="mailto:cfgalley@yahoo.com">cfgalley@yahoo.com</a>';
+      }
+    });
+
+    // Back from Wix checkout (bfcache): never leave buttons stuck or the drawer half-open.
+    addEventListener("pageshow", (e) => {
+      if (!e.persisted) return;
+      setBusy(false);
+      status.textContent = "";
+      root.classList.remove("is-open");
+      root.hidden = true;
+    });
+  }
 
   function menu() {
     const hdr = document.querySelector(".hdr");
@@ -674,6 +1085,7 @@ html.hold .col { animation-play-state: paused; }
     de.classList.remove("intro");
     Promise.allSettled(anims.map((a) => a.finished)).then(finish);
   }
+  drawer();
 })();
 </script>
 </body>
