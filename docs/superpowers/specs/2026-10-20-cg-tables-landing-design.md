@@ -1,7 +1,7 @@
 # CG Tables — Landing Page + Wix Preorders (Design Spec)
 
 Date: 2026-10-20
-Status: Awaiting review
+Status: Approved
 
 ## 1. Intent
 
@@ -21,8 +21,8 @@ order lands in a Wix dashboard the owner can manage.
 
 | Decided by user | Assumed (change any of these) |
 |---|---|
-| Product: custom-made tables | Prices shown as "Price confirmed at consultation" |
-| Wix Store checkout, $0 reserve | Phone/email are placeholders until provided |
+| Product: custom-made tables | Prices shown as "Price confirmed at consultation" (no prices yet) |
+| Wix Store checkout, $0 reserve | Contact: (773) 301-6638, cfgalley@yahoo.com |
 | 3 models: Classic, Fold, Heirloom | Headline: "Tables made / for the / click of / tiles" |
 | Local pickup/delivery, Barrington area | Tagline: "HANDMADE MAHJONG TABLES" |
 | ATRIUM layout, mahjong style | Images: 4 generated with Higgsfield (user approved credits) |
@@ -72,7 +72,7 @@ behaviour, load entrance and accessibility. Only these things change:
 **Copy**
 - Title: "CG Tables — Handmade mahjong tables"
 - Logo: **CG TABLES** (Archivo 900, same treatment) + "HANDMADE MAHJONG TABLES"
-- Utility strip: phone `Call : (847) 000-0000` and `Email : hello@cgtables.com` (placeholders);
+- Utility strip: phone `Call : (773)` / `301-6638` (tel:+17733016638) and `Email : cfgalley` / `@yahoo.com` (mailto:cfgalley@yahoo.com);
   links: Tables, How it works, Gallery, FAQ, Barrington area; search button kept.
 - Main nav: Tables (+ arrow circle), How it works, Gallery, Menu.
 - Header CTA: black pill **Preorder** + circle arrow.
@@ -134,6 +134,5 @@ such in the hand-off notes.
 
 ## 7. Open items for the owner
 
-- Real phone number and email for the header.
-- Real prices, if she wants them shown instead of "confirmed at consultation".
+- Real prices, once set, to replace "confirmed at consultation".
 - Real table photos to replace the generated ones.
