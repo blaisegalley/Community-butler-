@@ -307,6 +307,18 @@ svg { display: block; flex: none; }
 }
 .pcontact { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 16px 0; font-size: 14px; font-weight: 500; color: var(--nav-muted); }
 .panel .pill { width: 100%; }
+@keyframes navIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.hdr[data-open] .panel nav a, .hdr[data-open] .pcontact, .hdr[data-open] .panel .pill {
+  animation: navIn .5s cubic-bezier(.25, 1, .5, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+.panel nav a:nth-child(2) { --i: 1; }
+.panel nav a:nth-child(3) { --i: 2; }
+.panel nav a:nth-child(4) { --i: 3; }
+.panel nav a:nth-child(5) { --i: 4; }
+.pcontact { --i: 5; }
+.panel .pill { --i: 6; }
+@media (prefers-reduced-motion: reduce) { .hdr[data-open] .panel * { animation: none !important; } }
 
 /* ---------- hero ---------- */
 .hero { position: relative; z-index: 2; }
@@ -590,6 +602,30 @@ html.hold .col { animation-play-state: paused; }
   });
 
   entrance();
+  menu();
+
+  function menu() {
+    const hdr = document.querySelector(".hdr");
+    const btn = document.querySelector(".menu-btn");
+    const panel = document.getElementById("menu-panel");
+    const isOpen = () => hdr.hasAttribute("data-open");
+    const set = (open, moveFocus) => {
+      hdr.toggleAttribute("data-open", open);
+      btn.setAttribute("aria-expanded", String(open));
+      if (moveFocus) (open ? panel.querySelector("a") : btn).focus();
+    };
+    // detail === 0: activated from the keyboard, so focus moves into the panel
+    btn.addEventListener("click", (e) => set(!isOpen(), !isOpen() && e.detail === 0));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && isOpen()) set(false, true);
+    });
+    document.addEventListener("click", (e) => {
+      if (isOpen() && !hdr.contains(e.target)) set(false, false);
+    });
+    panel.addEventListener("click", (e) => {
+      if (e.target.closest("a")) set(false, false);
+    });
+  }
 
   function entrance() {
     const h1 = document.querySelector(".hero h1");
