@@ -20,6 +20,7 @@ import ProfileForm from '@/components/ProfileForm';
 import { getMyProfile } from '@/lib/profiles';
 import { fieldWrap, inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
+import { matchesPrefs } from '@/lib/services';
 
 const JOB_TYPE_OPTIONS = ['Yard work', 'Snow shoveling', 'Moving help', 'Junk hauling', 'Cleanouts', 'Dog walking', 'Odd jobs'];
 
@@ -281,7 +282,7 @@ function ButlerDashboard({ butler, onLogout }: { butler: Butler; onLogout: () =>
           {available.length ? (
             <div className="flex flex-col gap-2.5">
               {available.map((job) => (
-                <JobTile key={job.id} job={job} matched={butler.jobTypePrefs.includes(job.service)} action={
+                <JobTile key={job.id} job={job} matched={matchesPrefs(butler.jobTypePrefs, job.service)} action={
                   <button onClick={() => void handleAccept(job.id)} className="h-[34px] px-4 rounded-[8px] bg-ink text-white text-[12.5px] font-medium hover:opacity-90 transition-opacity mt-3">
                     Accept job
                   </button>

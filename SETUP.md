@@ -202,6 +202,77 @@ Then walk through it by hand:
 
 ---
 
+## 9. Turn on the agents (optional)
+
+The **Approvals** tab in `/admin` is an inbox of drafts written by the
+agents in `supabase/functions/_shared/agents/` (design:
+`docs/multi-agent-system.md`). They:
+
+- sort new requests and flag anything unsafe
+- propose which Butler should take a job
+- draft Nextdoor replies from posts you paste in, and follow-up emails
+- flag towns and services that are short on Butlers, and draft the
+  recruiting post
+- draft outreach to the businesses you add under **Businesses and
+  website inquiries**, and website proposals at the right package
+- write a weekly review every Monday, with suggested policy changes as
+  separate cards
+
+**They only draft.** Nothing is sent, no job changes and no policy
+changes until one of you approves the card.
+
+It already works in demo mode: open `/admin` → **Approvals**. Drafts
+come from templates and no messages go out. To run it for real:
+
+1. **SQL Editor**: run `supabase/migrations/004_agents.sql`, then
+   `supabase/migrations/005_more_agents.sql`.
+2. Deploy the two functions:
+
+   ```bash
+   npx supabase functions deploy agent-dispatcher
+   npx supabase functions deploy agent-decide
+   ```
+
+3. **Edge Functions → Secrets** (all optional):
+
+   | Name | What it does without it |
+   |---|---|
+   | `ANTHROPIC_API_KEY` | Drafts come from plain templates instead of Claude. Everything else works. |
+   | `GROUPME_BOT_ID` | "Post to GroupMe" tells you to paste the text into the group yourself. Create a bot at dev.groupme.com/bots for your Butler group. |
+   | `AGENT_MODEL` | Uses `claude-opus-5-5`. |
+
+4. Run the new block at the bottom of `supabase/schedule.sql` (same two
+   placeholders as step 6). The agents then check for work every 5
+   minutes. **Run agents now** in the Approvals tab does the same thing
+   on demand.
+
+**Cost.** With a key set, each job request costs a few cents in model
+calls. Spending stops at $20 a month by default: past that, the agents
+draft from templates until the 1st. To change it, or any other policy
+(towns, prices, safety rules), insert a row in `agent_config`:
+
+```sql
+update public.agent_config set active = false where active;
+insert into public.agent_config (config, active, note)
+values ('{"monthlyBudgetUsd": 10, "priceBook": {"Snow shoveling": {"floor": 20, "low": 30, "high": 70}}}', true, 'Lower budget, snow prices');
+```
+
+Anything you leave out keeps its default from `config.ts`. Approving an
+Analyst proposal (for example "Start serving Palatine?") writes a new
+row the same way. To roll back, switch `active` back to the previous row:
+
+```sql
+select version, note, created_at from public.agent_config order by version desc limit 5;
+update public.agent_config set active = false where active;
+update public.agent_config set active = true where version = <previous version>;
+``` To switch every agent off, set
+`{"killSwitches": {"all": true}}`.
+
+**Tests.** `npm test` runs the agent unit tests. It needs Node 22.18 or
+newer, which runs TypeScript directly.
+
+---
+
 ## What to know about iPhones
 
 You chose push notifications over text messages. On Android and desktop

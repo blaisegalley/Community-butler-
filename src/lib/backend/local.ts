@@ -28,6 +28,7 @@ import type {
   NewJobInput,
   SignInResult,
 } from './types';
+import { matchesPrefs } from '@/lib/services';
 
 interface LocalAdmin extends Admin {
   password: string;
@@ -261,7 +262,7 @@ export const local: Backend = {
     const area = (butler?.serviceArea ?? '').trim().toLowerCase();
 
     const score = (j: Job) =>
-      (prefs.includes(j.service) ? 2 : 0) + (area && j.address.toLowerCase().includes(area) ? 1 : 0);
+      (matchesPrefs(prefs, j.service) ? 2 : 0) + (area && j.address.toLowerCase().includes(area) ? 1 : 0);
 
     return jobs()
       .filter((j) => j.status === 'Approved' && !j.assignedButlerId)

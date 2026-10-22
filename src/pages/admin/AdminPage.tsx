@@ -25,6 +25,8 @@ import {
 import { useQuery } from '@/lib/useQuery';
 import ProfileReview from '@/components/ProfileReview';
 import Dashboard from '@/components/Dashboard';
+import Approvals from '@/components/Approvals';
+import { getAgentTasks } from '@/lib/agents/api';
 import { getProfilesForReview } from '@/lib/profiles';
 import { inputClass, labelClass, primaryBtn } from '@/components/FormControls';
 import { withBase } from '@/lib/url';
@@ -136,7 +138,7 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-type Tab = 'dashboard' | 'jobs' | 'profiles' | 'butlers' | 'activity' | 'admins';
+type Tab = 'dashboard' | 'approvals' | 'jobs' | 'profiles' | 'butlers' | 'activity' | 'admins';
 
 /**
  * The roster with each Butler's stats attached. One query per Butler is a
@@ -165,6 +167,11 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
   // Profiles only exist on the hosted backend — they need file storage
   // for the photo and a server to draft the bio.
   const profilesQuery = useQuery(async () => (isShared ? getProfilesForReview() : []));
+  // Only the count is needed here; the Approvals tab loads its own copy.
+  const agentQuery = useQuery(getAgentTasks);
+  const awaitingApproval = (agentQuery.data ?? []).filter(
+    (t) => t.state === 'awaiting_approval' && +new Date(t.runAfter) <= Date.now(),
+  ).length;
 
   const loadError =
     jobsQuery.error ?? butlersQuery.error ?? activityQuery.error ?? adminsQuery.error;
@@ -186,6 +193,7 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
 
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: 'dashboard', label: 'Dashboard', count: -1 },
+    { id: 'approvals', label: 'Approvals', count: awaitingApproval },
     { id: 'jobs', label: 'Job requests', count: jobs.length },
     { id: 'profiles', label: 'Profiles to review', count: awaitingReview },
     { id: 'butlers', label: 'Butler roster', count: butlers.length },
@@ -241,6 +249,8 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
         </div>
 
         {tab === 'dashboard' && <Dashboard />}
+
+        {tab === 'approvals' && <Approvals />}
 
         {tab === 'jobs' && (
           <section>

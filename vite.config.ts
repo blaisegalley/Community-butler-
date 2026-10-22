@@ -9,6 +9,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // The agent core lives with the edge functions so Deno can deploy it;
+      // the dashboard's demo mode runs the very same code in the browser.
+      '@agents': fileURLToPath(new URL('./supabase/functions/_shared/agents', import.meta.url)),
     },
   },
   optimizeDeps: {

@@ -12,6 +12,7 @@
  */
 
 import { supabase } from '@/lib/supabase';
+import { matchesPrefs } from '@/lib/services';
 import type {
   ActivityEntry,
   Admin,
@@ -302,7 +303,7 @@ export const remote: Backend = {
     const prefs = butler?.job_type_prefs ?? [];
     const area = (butler?.service_area ?? '').trim().toLowerCase();
     const score = (j: Job) =>
-      (prefs.includes(j.service) ? 2 : 0) + (area && j.address.toLowerCase().includes(area) ? 1 : 0);
+      (matchesPrefs(prefs, j.service) ? 2 : 0) + (area && j.address.toLowerCase().includes(area) ? 1 : 0);
 
     return ((jobRows ?? []) as JobRow[])
       .map(toJob)
