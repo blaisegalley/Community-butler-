@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useInView } from '@/hooks/useInView';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 type Direction = 'up' | 'down' | 'left' | 'right' | 'scale';
@@ -10,14 +11,11 @@ interface AnimateProps {
   direction?: Direction;
 }
 
-const directionClass: Record<Direction, string> = {
-  up: 'animate-fade-up',
-  down: 'animate-fade-down',
-  left: 'animate-fade-left',
-  right: 'animate-fade-right',
-  scale: 'animate-fade-scale',
-};
-
+/**
+ * Reveals its children the first time they scroll into view. It used to play
+ * on page load, which meant everything below the hero had finished animating
+ * long before anyone scrolled down to see it.
+ */
 export default function Animate({
   children,
   delay = 0,
@@ -25,6 +23,7 @@ export default function Animate({
   direction = 'up',
 }: AnimateProps) {
   const reduceMotion = usePrefersReducedMotion();
+  const [ref, inView] = useInView<HTMLDivElement>();
 
   if (reduceMotion) {
     return <div className={className}>{children}</div>;
@@ -32,8 +31,9 @@ export default function Animate({
 
   return (
     <div
-      className={`opacity-0 ${directionClass[direction]} ${className}`}
-      style={{ animationDelay: `${delay}ms` }}
+      ref={ref}
+      className={`reveal reveal-${direction} ${inView ? 'is-shown' : ''} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
     >
       {children}
     </div>

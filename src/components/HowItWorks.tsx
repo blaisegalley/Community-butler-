@@ -34,7 +34,7 @@ export default function HowItWorks() {
 
         <ol className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 list-none">
           {STEPS.map((step, i) => (
-            <Animate key={step.n} delay={100 + i * 80} direction="up">
+            <Animate key={step.n} delay={i * 70} direction="up">
               <li className="h-full bg-white border border-stone rounded-[20px] p-7 sm:p-8 flex flex-col">
                 <span className="text-ember text-[13px] font-semibold tracking-[0.08em] mb-5">{step.n}</span>
                 <h3 className="text-charcoal text-[20px] sm:text-[22px] font-semibold leading-tight tracking-[-0.01em] mb-3">

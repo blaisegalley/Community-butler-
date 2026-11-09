@@ -19,13 +19,13 @@ export default function ClosingCTA() {
           <div className="flex flex-wrap gap-4">
             <a
               href={withBase('request/')}
-              className={`bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] hover:bg-white transition-colors ${focusRing}`}
+              className={`bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] hover:bg-white btn-press ${focusRing}`}
             >
               Post a Job
             </a>
             <a
               href={withBase('auth/?mode=signup')}
-              className={`border border-white/25 text-white rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] hover:border-white/60 transition-colors ${focusRing}`}
+              className={`border border-white/25 text-white rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] hover:border-white/60 btn-press ${focusRing}`}
             >
               Become a Butler
             </a>

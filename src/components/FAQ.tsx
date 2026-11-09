@@ -44,17 +44,17 @@ export default function FAQ() {
 
         <div className="max-w-[860px] flex flex-col">
           {QUESTIONS.map((item, i) => (
-            <Animate key={item.q} delay={80 + i * 50} direction="up">
-              <details className="group border-b border-stone">
-                <summary className="flex items-start justify-between gap-6 cursor-pointer list-none py-5 text-charcoal text-[17px] sm:text-[18px] font-medium leading-snug rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-sand">
+            <Animate key={item.q} delay={i * 40} direction="up">
+              <details className="faq-item group border-b border-stone">
+                <summary className="flex items-start justify-between gap-6 cursor-pointer list-none py-5 text-charcoal text-[17px] sm:text-[18px] font-medium leading-snug rounded-sm transition-colors duration-150 hover:text-forest focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-sand">
                   {item.q}
-                  <span aria-hidden="true" className="shrink-0 mt-1 text-graphite transition-transform duration-200 group-open:rotate-45">
+                  <span aria-hidden="true" className="shrink-0 mt-1 text-graphite transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-open:rotate-45 motion-reduce:transition-none">
                     <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round">
                       <path d="M12 5v14M5 12h14" />
                     </svg>
                   </span>
                 </summary>
-                <p className="text-graphite text-[15px] sm:text-[16px] leading-[1.65] pb-5 pr-10 max-w-[68ch]">{item.a}</p>
+                <p className="faq-answer text-graphite text-[15px] sm:text-[16px] leading-[1.65] pb-5 pr-10 max-w-[68ch]">{item.a}</p>
               </details>
             </Animate>
           ))}
