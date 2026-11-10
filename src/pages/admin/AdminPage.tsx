@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { LogoMark } from '@/components/Logo';
 import {
   addAdmin,
@@ -138,7 +138,30 @@ function fmtDate(iso: string | null) {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-type Tab = 'dashboard' | 'approvals' | 'jobs' | 'profiles' | 'butlers' | 'activity' | 'admins';
+type Tab = 'dashboard' | 'approvals' | 'new' | 'active' | 'completed' | 'profiles' | 'butlers' | 'activity' | 'admins';
+
+/** How long a rejected job stays on the list before it drops off. */
+const REJECTED_VISIBLE_MS = 60 * 60 * 1000;
+
+/**
+ * Whether a rejected job has been rejected long enough to leave the list.
+ * Without a rejection time (the database has not had 006 run yet) it stays,
+ * since there is no way to tell how long ago it happened.
+ */
+function rejectedLongAgo(job: Job, now: number): boolean {
+  if (job.status !== 'Rejected' || !job.rejectedAt) return false;
+  return now - +new Date(job.rejectedAt) >= REJECTED_VISIBLE_MS;
+}
+
+/** Re-renders once a minute, so rejected jobs leave without a page reload. */
+function useMinuteClock(): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
+}
 
 /**
  * The roster with each Butler's stats attached. One query per Butler is a
@@ -158,6 +181,7 @@ async function loadRoster(): Promise<{ butler: Butler; stats: ButlerStats }[]> {
 
 function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => void }) {
   const [tab, setTab] = useState<Tab>('dashboard');
+  const now = useMinuteClock();
 
   const jobsQuery = useQuery(getJobs);
   const butlersQuery = useQuery(getButlers);
@@ -177,8 +201,17 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
     jobsQuery.error ?? butlersQuery.error ?? activityQuery.error ?? adminsQuery.error;
 
   const jobs = (jobsQuery.data ?? [])
-    .slice()
+    .filter((job) => !rejectedLongAgo(job, now))
     .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || +new Date(b.submittedAt) - +new Date(a.submittedAt));
+  // New requests to decide on, with anything just rejected kept alongside
+  // for its hour so a mis-click can still be seen.
+  const newJobs = jobs.filter((j) => j.status === 'New' || j.status === 'Rejected');
+  const activeJobs = jobs.filter((j) => j.status === 'Approved' || j.status === 'Assigned');
+  const completedJobs = jobs
+    .filter((j) => j.status === 'Completed')
+    .sort((a, b) => +new Date(b.completedAt ?? b.submittedAt) - +new Date(a.completedAt ?? a.submittedAt));
+  const awaitingDecision = newJobs.filter((j) => j.status === 'New').length;
+  const rejectedWithoutTime = jobs.some((j) => j.status === 'Rejected' && j.rejectedAt === undefined);
   const butlers = butlersQuery.data ?? [];
   const activity = activityQuery.data ?? [];
   const admins = adminsQuery.data ?? [];
@@ -194,7 +227,9 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
   const TABS: { id: Tab; label: string; count: number }[] = [
     { id: 'dashboard', label: 'Dashboard', count: -1 },
     { id: 'approvals', label: 'Approvals', count: awaitingApproval },
-    { id: 'jobs', label: 'Job requests', count: jobs.length },
+    { id: 'new', label: 'New jobs', count: awaitingDecision },
+    { id: 'active', label: 'In progress', count: activeJobs.length },
+    { id: 'completed', label: 'Completed jobs', count: completedJobs.length },
     { id: 'profiles', label: 'Profiles to review', count: awaitingReview },
     { id: 'butlers', label: 'Butler roster', count: butlers.length },
     { id: 'activity', label: 'Activity', count: activity.length },
@@ -252,23 +287,48 @@ function AdminDashboard({ email, onLogout }: { email: string; onLogout: () => vo
 
         {tab === 'approvals' && <Approvals />}
 
-        {tab === 'jobs' && (
+        {tab === 'new' && (
           <section>
-            {jobs.length ? (
-              <div className="flex flex-col gap-2.5">
-                {jobs.map((job) => (
-                  <JobCard key={job.id} job={job} butlers={butlers} />
-                ))}
+            <p className="text-[12.5px] text-black/45 mb-3.5 max-w-[70ch]">
+              Requests waiting for a yes or no. A job you reject stays here for an hour, then drops off the list.
+            </p>
+            {rejectedWithoutTime && (
+              <div className="rounded-[10px] border border-black/10 bg-white text-[12.5px] text-graphite px-4 py-3 mb-3.5">
+                Rejected jobs will start clearing after an hour once{' '}
+                <code className="text-ink">supabase/migrations/006_job_rejected_at.sql</code> has been run in the
+                Supabase SQL Editor. Until then they stay listed.
               </div>
-            ) : (
-              <EmptyState
-                text={
-                  jobsQuery.loading
-                    ? 'Loading job requests\u2026'
-                    : 'No job requests yet — submissions from /request will appear here.'
-                }
-              />
             )}
+            <JobList
+              jobs={newJobs}
+              butlers={butlers}
+              now={now}
+              empty={jobsQuery.loading ? 'Loading job requests\u2026' : 'No new requests — submissions from /request will appear here.'}
+            />
+          </section>
+        )}
+
+        {tab === 'active' && (
+          <section>
+            <p className="text-[12.5px] text-black/45 mb-3.5">Approved jobs waiting for a Butler, and jobs a Butler is on now.</p>
+            <JobList
+              jobs={activeJobs}
+              butlers={butlers}
+              now={now}
+              empty={jobsQuery.loading ? 'Loading jobs\u2026' : 'Nothing in progress right now.'}
+            />
+          </section>
+        )}
+
+        {tab === 'completed' && (
+          <section>
+            <p className="text-[12.5px] text-black/45 mb-3.5">Finished jobs, most recent first.</p>
+            <JobList
+              jobs={completedJobs}
+              butlers={butlers}
+              now={now}
+              empty={jobsQuery.loading ? 'Loading jobs\u2026' : 'No completed jobs yet.'}
+            />
           </section>
         )}
 
@@ -466,7 +526,7 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
-function JobCard({ job, butlers }: { job: Job; butlers: Butler[] }) {
+function JobCard({ job, butlers, now }: { job: Job; butlers: Butler[]; now: number }) {
   const [selectedButler, setSelectedButler] = useState(butlers[0]?.id ?? '');
   const [busy, setBusy] = useState(false);
   const assignedButler = butlers.find((b) => b.id === job.assignedButlerId);
@@ -540,6 +600,12 @@ function JobCard({ job, butlers }: { job: Job; butlers: Butler[] }) {
       {job.status === 'Rejected' && job.rejectNote && (
         <div className="text-[12.5px] text-[#8c2f1c] mt-2">Rejected: {job.rejectNote}</div>
       )}
+      {job.status === 'Rejected' && job.rejectedAt && (
+        <div className="text-[12px] text-black/40 mt-1">
+          Leaves this list in{' '}
+          {Math.max(1, Math.ceil((REJECTED_VISIBLE_MS - (now - +new Date(job.rejectedAt))) / 60000))} min
+        </div>
+      )}
 
       {job.status === 'New' && (
         <div className="flex gap-2 mt-3">
@@ -579,6 +645,17 @@ function JobCard({ job, butlers }: { job: Job; butlers: Butler[] }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function JobList({ jobs, butlers, now, empty }: { jobs: Job[]; butlers: Butler[]; now: number; empty: string }) {
+  if (!jobs.length) return <EmptyState text={empty} />;
+  return (
+    <div className="flex flex-col gap-2.5">
+      {jobs.map((job) => (
+        <JobCard key={job.id} job={job} butlers={butlers} now={now} />
+      ))}
     </div>
   );
 }

@@ -46,6 +46,8 @@ interface JobRow {
   assigned_butler_id: string | null;
   assigned_at: string | null;
   completed_at: string | null;
+  // Only there once 006_job_rejected_at.sql has been run.
+  rejected_at?: string | null;
   accepted_by_self: boolean;
   rating: number | null;
 }
@@ -76,6 +78,7 @@ function toJob(row: JobRow): Job {
     assignedButlerId: row.assigned_butler_id,
     assignedAt: row.assigned_at,
     completedAt: row.completed_at,
+    ...(row.rejected_at === undefined ? {} : { rejectedAt: row.rejected_at }),
     acceptedBySelf: row.accepted_by_self,
     ...(row.rating === null ? {} : { rating: row.rating }),
   };
@@ -191,9 +194,12 @@ export const remote: Backend = {
   },
 
   async getJobs(): Promise<Job[]> {
+    // Every column rather than JOB_COLUMNS, so rejected_at comes through once
+    // the migration adding it has been run, and its absence before then is
+    // not an error that empties the whole admin list.
     const { data, error } = await supabase()
       .from('jobs')
-      .select(JOB_COLUMNS)
+      .select('*')
       .order('submitted_at', { ascending: false });
     if (error) fail('Could not load jobs', error);
     return ((data ?? []) as JobRow[]).map(toJob);
