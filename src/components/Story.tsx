@@ -1,4 +1,6 @@
 import Animate from '@/components/Animate';
+import { useInView } from '@/hooks/useInView';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 
 const PHOTO = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/799ab5f9-49b1-473b-a6c6-a863466ad769.jpg';
 
@@ -18,8 +20,11 @@ const ASSURANCES = [
 ];
 
 export default function Story() {
+  const reduceMotion = usePrefersReducedMotion();
+  const [photoRef, photoInView] = useInView<HTMLDivElement>();
+
   return (
-    <section id="story" className="w-full bg-white py-20 sm:py-28 scroll-mt-6">
+    <section id="story" className="w-full bg-white py-20 sm:py-28 scroll-mt-[60px]">
       <div className="w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-16 sm:mb-20">
           <Animate delay={0} direction="up">
@@ -49,19 +54,27 @@ export default function Story() {
             </div>
           </Animate>
 
-          <Animate delay={120} direction="up">
-            <img
-              src={PHOTO}
-              alt="A butler finishing a lawn in the neighborhood"
-              loading="lazy"
-              className="w-full aspect-[4/3] object-cover rounded-[20px] border border-stone"
-            />
-          </Animate>
+          {/* The outer box is what gets watched; a fully clipped element can
+              never report itself as on screen. */}
+          <div ref={photoRef}>
+            <div
+              className={`aspect-[4/3] rounded-[20px] overflow-hidden ${
+                reduceMotion ? '' : `reveal-clip ${photoInView ? 'is-shown' : ''}`
+              }`}
+            >
+              <img
+                src={PHOTO}
+                alt="A butler finishing a lawn in the neighborhood"
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
           {ASSURANCES.map((item, i) => (
-            <Animate key={item.title} delay={100 + i * 80} direction="up">
+            <Animate key={item.title} delay={i * 70} direction="up">
               <div className="h-full border-t border-stone pt-6">
                 <h3 className="text-charcoal text-[17px] font-semibold leading-snug tracking-[-0.01em] mb-2">
                   {item.title}

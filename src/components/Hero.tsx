@@ -7,6 +7,9 @@ import { withBase } from '@/lib/url';
 /** How long to let the browser's own autoplay settle before offering a tap target. */
 const AUTOPLAY_GRACE_MS = 2000;
 
+/** How long one hero clip takes to dissolve into the next. */
+const CROSSFADE_MS = 700;
+
 const VIDEO_CDN = 'https://d8j0ntlcm91z4.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/';
 const PHOTO_CDN = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3InUJHYWQdfJ9vDYlt0pJC4Yt0u/';
 
@@ -21,11 +24,12 @@ const HERO_VIDEOS = [
   { src: `${VIDEO_CDN}hf_20260916_153138_b125f92c-1be7-4a81-8cb8-57ccf1c62495.mp4`, poster: `${PHOTO_CDN}799ab5f9-49b1-473b-a6c6-a863466ad769.jpg` }, // mowing the lawn
   { src: `${VIDEO_CDN}hf_20260916_181548_5fa38635-59ee-467a-a3c4-2d44a97a88ae.mp4`, poster: `${PHOTO_CDN}3b351f2a-8693-450b-8791-f81451de9031.jpg` }, // weeding
 ];
-// A single <video> per clip, remounted via `key` on each switch, with
-// autoPlay/src/muted/playsInline set declaratively — the plain, reliable
-// React video-autoplay pattern. A short opacity fade-in on mount (inline
-// style, not a Tailwind arbitrary class) softens the cut between clips
-// without needing two video elements playing at once.
+// One <video> per clip, keyed by its index, with autoPlay/src/muted/
+// playsInline set declaratively — the plain, reliable React video-autoplay
+// pattern. Each clip fades in on mount (inline style, not a Tailwind
+// arbitrary class). The clip that just ended stays mounted underneath,
+// frozen on its last frame, until the fade is over — so one scene dissolves
+// into the next instead of dipping to black in between.
 //
 // Playback is left entirely to the autoPlay attribute. Calling play()
 // alongside it races the browser's own autoplay and rejects with an
@@ -66,7 +70,7 @@ function HeroVideo({ src, poster, onEnded }: { src: string; poster: string; onEn
         style={
           reduceMotion
             ? undefined
-            : { opacity: visible ? 1 : 0, transition: 'opacity 700ms ease' }
+            : { opacity: visible ? 1 : 0, transition: `opacity ${CROSSFADE_MS}ms ease` }
         }
         src={src}
         poster={poster}
@@ -98,14 +102,33 @@ function HeroVideo({ src, poster, onEnded }: { src: string; poster: string; onEn
 
 function HeroVideoBackground() {
   const [videoIndex, setVideoIndex] = useState(0);
-  const clip = HERO_VIDEOS[videoIndex];
+  // The clip being faded out of, if a switch is under way.
+  const [leaving, setLeaving] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (leaving === null) return;
+    const done = setTimeout(() => setLeaving(null), CROSSFADE_MS + 100);
+    return () => clearTimeout(done);
+  }, [leaving]);
+
+  function advance() {
+    setLeaving(videoIndex);
+    setVideoIndex((videoIndex + 1) % HERO_VIDEOS.length);
+  }
+
+  // Outgoing clip first, so the incoming one paints on top of it.
+  const mounted = leaving === null ? [videoIndex] : [leaving, videoIndex];
   return (
-    <HeroVideo
-      key={videoIndex}
-      src={clip.src}
-      poster={clip.poster}
-      onEnded={() => setVideoIndex((i) => (i + 1) % HERO_VIDEOS.length)}
-    />
+    <>
+      {mounted.map((i) => (
+        <HeroVideo
+          key={i}
+          src={HERO_VIDEOS[i].src}
+          poster={HERO_VIDEOS[i].poster}
+          onEnded={i === videoIndex ? advance : () => {}}
+        />
+      ))}
+    </>
   );
 }
 
@@ -117,20 +140,32 @@ const NAV_LINKS = [
 ];
 
 // Faceted bowtie mark — used only in the hero nav.
-function BowtieMark({ className = '' }: { className?: string }) {
+function BowtieMark({
+  className = '',
+  idPrefix = 'hero',
+  dark = false,
+}: {
+  className?: string;
+  /** Two marks on one page need separate gradient ids. */
+  idPrefix?: string;
+  /** For light backgrounds: dark wings with a light knot. */
+  dark?: boolean;
+}) {
+  const from = dark ? '#0B0F0D' : '#F4EEE3';
+  const to = dark ? '#3C5A45' : '#8A9089';
   return (
-    <svg viewBox="0 0 100 60" className={className} fill="none">
-      <polygon points="4,6 4,54 44,30" fill="url(#bowtie-left)" />
-      <polygon points="96,6 96,54 56,30" fill="url(#bowtie-right)" />
-      <rect x="42" y="24" width="16" height="12" rx="3" fill="#0B0F0D" />
+    <svg viewBox="0 0 100 60" className={className} fill="none" aria-hidden="true">
+      <polygon points="4,6 4,54 44,30" fill={`url(#${idPrefix}-bowtie-left)`} />
+      <polygon points="96,6 96,54 56,30" fill={`url(#${idPrefix}-bowtie-right)`} />
+      <rect x="42" y="24" width="16" height="12" rx="3" fill={dark ? '#F4EEE3' : '#0B0F0D'} />
       <defs>
-        <linearGradient id="bowtie-left" x1="4" y1="6" x2="44" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F4EEE3" />
-          <stop offset="1" stopColor="#8A9089" />
+        <linearGradient id={`${idPrefix}-bowtie-left`} x1="4" y1="6" x2="44" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor={from} />
+          <stop offset="1" stopColor={to} />
         </linearGradient>
-        <linearGradient id="bowtie-right" x1="96" y1="6" x2="56" y2="30" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F4EEE3" />
-          <stop offset="1" stopColor="#8A9089" />
+        <linearGradient id={`${idPrefix}-bowtie-right`} x1="96" y1="6" x2="56" y2="30" gradientUnits="userSpaceOnUse">
+          <stop stopColor={from} />
+          <stop offset="1" stopColor={to} />
         </linearGradient>
       </defs>
     </svg>
@@ -157,6 +192,20 @@ const focusRing = 'focus-visible:outline-none focus-visible:ring-2 focus-visible
 
 export default function Hero() {
   const [menuOpen, setMenuOpen] = useState(false);
+  // Once the hero has scrolled away its nav goes with it, so a slim bar
+  // takes over — "Post a Job" should never be more than a glance away.
+  const heroEndRef = useRef<HTMLDivElement>(null);
+  const [pastHero, setPastHero] = useState(false);
+
+  useEffect(() => {
+    const el = heroEndRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([entry]) => {
+      setPastHero(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -173,6 +222,46 @@ export default function Hero() {
   }, [menuOpen]);
 
   return (
+    <>
+    <div
+      className={`fixed top-0 inset-x-0 z-40 bg-sand/85 backdrop-blur-md border-b border-black/10 transition-transform ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
+        pastHero ? 'translate-y-0 duration-300' : '-translate-y-full duration-200'
+      }`}
+      aria-hidden={!pastHero}
+    >
+      <div className="w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px] h-[60px] flex items-center justify-between gap-4">
+        <a
+          href={withBase('')}
+          tabIndex={pastHero ? 0 : -1}
+          className="flex items-center gap-2.5 text-ink rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest"
+        >
+          <BowtieMark idPrefix="bar" dark className="w-[28px] h-[17px]" />
+          <span className="text-[14px] sm:text-[16px] font-medium leading-none tracking-[-0.01em] uppercase whitespace-nowrap">
+            Community Butler
+          </span>
+        </a>
+        <div className="flex items-center gap-1 sm:gap-2">
+          {NAV_LINKS.slice(1).map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              tabIndex={pastHero ? 0 : -1}
+              className="hidden md:inline-flex h-10 px-3 items-center text-ink/75 text-[13px] font-medium rounded-md hover:text-ink btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest"
+            >
+              {link.label}
+            </a>
+          ))}
+          <a
+            href={withBase('request/')}
+            tabIndex={pastHero ? 0 : -1}
+            className="ml-1 h-10 px-5 inline-flex items-center rounded-full bg-ink text-white text-[12.5px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:bg-forest btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-sand"
+          >
+            Post a Job
+          </a>
+        </div>
+      </div>
+    </div>
+
     <section className="relative w-full h-screen overflow-hidden bg-ink flex flex-col">
       <HeroVideoBackground />
 
@@ -193,12 +282,12 @@ export default function Hero() {
             </span>
           </a>
 
-          <div className="hidden md:flex liquid-glass rounded-full items-center gap-8 px-8 py-3">
+          <div className="hidden lg:flex liquid-glass rounded-full items-center gap-5 xl:gap-8 px-6 xl:px-8 py-3">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.label}
                 href={link.href}
-                className={`text-white text-[13px] font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors rounded-sm ${focusRing}`}
+                className={`text-white text-[13px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:text-silver btn-press rounded-sm ${focusRing}`}
               >
                 {link.label}
               </a>
@@ -208,7 +297,7 @@ export default function Hero() {
           <div className="flex items-center gap-2">
             <a
               href={withBase('request/')}
-              className={`hidden sm:inline-block rounded-full px-6 py-3 bg-sand text-ink text-[13px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:bg-white transition-colors ${focusRing}`}
+              className={`hidden sm:inline-block rounded-full px-6 py-3 bg-sand text-ink text-[13px] font-medium uppercase tracking-[0.04em] whitespace-nowrap hover:bg-white btn-press ${focusRing}`}
             >
               Post a Job
             </a>
@@ -219,7 +308,7 @@ export default function Hero() {
               aria-label="Open menu"
               aria-expanded={menuOpen}
               aria-controls="hero-mobile-menu"
-              className={`md:hidden w-11 h-11 rounded-full liquid-glass flex items-center justify-center text-white ${focusRing}`}
+              className={`lg:hidden w-11 h-11 rounded-full liquid-glass flex items-center justify-center text-white btn-press ${focusRing}`}
             >
               <MenuIcon />
             </button>
@@ -227,41 +316,42 @@ export default function Hero() {
         </nav>
 
         {menuOpen && (
-          <div id="hero-mobile-menu" className="md:hidden fixed inset-0 z-50 bg-ink flex flex-col">
+          <div id="hero-mobile-menu" className="menu-sheet lg:hidden fixed inset-0 z-50 bg-ink flex flex-col">
             <div className="px-6 pt-6 flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
                 aria-label="Close menu"
-                className={`w-11 h-11 rounded-full border border-white/20 flex items-center justify-center text-white ${focusRing}`}
+                className={`w-11 h-11 rounded-full border border-white/20 flex items-center justify-center text-white btn-press ${focusRing}`}
               >
                 <CloseIcon />
               </button>
             </div>
 
             <nav className="flex-1 flex flex-col justify-center gap-2 px-8">
-              {NAV_LINKS.map((link) => (
+              {NAV_LINKS.map((link, i) => (
                 <a
                   key={link.label}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className={`text-white text-2xl font-medium py-3 rounded-md ${focusRing}`}
+                  className={`menu-item text-white text-2xl font-medium py-3 rounded-md ${focusRing}`}
+                  style={{ animationDelay: `${60 + i * 45}ms` }}
                 >
                   {link.label}
                 </a>
               ))}
             </nav>
 
-            <div className="px-8 pb-12 flex flex-col gap-3">
+            <div className="menu-item px-8 pb-12 flex flex-col gap-3" style={{ animationDelay: '260ms' }}>
               <a
                 href={withBase('request/')}
-                className={`text-center bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] ${focusRing}`}
+                className={`text-center bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] btn-press ${focusRing}`}
               >
                 Post a Job
               </a>
               <a
                 href={withBase('auth/?mode=signup')}
-                className={`text-center border border-white/25 text-white rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] ${focusRing}`}
+                className={`text-center border border-white/25 text-white rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] btn-press ${focusRing}`}
               >
                 Become a Butler
               </a>
@@ -270,7 +360,7 @@ export default function Hero() {
         )}
 
         <div className="flex-1 flex flex-col justify-end pb-12 lg:pb-16 px-6 md:px-12 lg:px-16">
-          <div className="lg:grid lg:grid-cols-2 lg:items-end lg:gap-8">
+          <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-end lg:gap-8">
             <div>
               <AnimatedHeading
                 text={'Real jobs, done\nby butlers next door.'}
@@ -291,13 +381,13 @@ export default function Hero() {
                 <div className="flex flex-wrap gap-4">
                   <a
                     href={withBase('request/')}
-                    className="bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] hover:bg-white transition-colors"
+                    className={`bg-sand text-ink rounded-full px-8 py-4 text-sm font-medium uppercase tracking-[0.04em] hover:bg-white btn-press ${focusRing}`}
                   >
                     Post a Job
                   </a>
                   <a
                     href={withBase('auth/?mode=signup')}
-                    className="liquid-glass rounded-full px-8 py-4 text-white text-sm font-medium uppercase tracking-[0.04em] hover:text-silver transition-colors"
+                    className={`liquid-glass rounded-full px-8 py-4 text-white text-sm font-medium uppercase tracking-[0.04em] hover:text-silver btn-press ${focusRing}`}
                   >
                     Become a Butler
                   </a>
@@ -316,6 +406,8 @@ export default function Hero() {
           </div>
         </div>
       </div>
+      <div ref={heroEndRef} className="absolute bottom-0 inset-x-0 h-px pointer-events-none" aria-hidden="true" />
     </section>
+    </>
   );
 }

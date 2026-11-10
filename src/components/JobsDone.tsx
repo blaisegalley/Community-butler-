@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import Animate from '@/components/Animate';
+import { useInView } from '@/hooks/useInView';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import NotifyButton from '@/components/NotifyButton';
 import { addJob } from '@/lib/store';
@@ -196,7 +197,8 @@ function CardVideo({ src, poster, alt }: { src: string; poster: string; alt: str
     return () => io.disconnect();
   }, [reduceMotion]);
 
-  const className = 'absolute inset-0 w-full h-full object-cover opacity-75 transition-opacity duration-300 group-hover:opacity-95';
+  const className =
+    'absolute inset-0 w-full h-full object-cover opacity-75 transition-[opacity,transform] duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:opacity-95 group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100';
 
   if (reduceMotion) {
     return <img className={className} src={poster} alt={alt} loading="lazy" />;
@@ -208,6 +210,9 @@ function CardVideo({ src, poster, alt }: { src: string; poster: string; alt: str
 export default function JobsDone() {
   const reduceMotion = usePrefersReducedMotion();
   const railRef = useRef<HTMLDivElement>(null);
+  // The cards reveal together when the rail arrives, not one by one as each is
+  // swiped to — a card that fades in under your thumb reads as lag.
+  const [railViewRef, railInView] = useInView<HTMLDivElement>();
   const [active, setActive] = useState<ServiceCard | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [sentJobId, setSentJobId] = useState<string | null>(null);
@@ -275,13 +280,13 @@ export default function JobsDone() {
           className={`w-full max-w-[1800px] mx-auto px-5 sm:px-8 md:px-[82px] ${
             reduceMotion
               ? ''
-              : `transition-[transform,opacity] ease-[cubic-bezier(0.16,1,0.3,1)] ${active ? 'duration-[400ms]' : 'duration-200'}`
+              : `transition-[transform,opacity] ease-[cubic-bezier(0.23,1,0.32,1)] ${active ? 'duration-[400ms]' : 'duration-200'}`
           }`}
           style={
             active
               ? reduceMotion
                 ? { opacity: 0.35, pointerEvents: 'none' }
-                : { transform: 'scale(0.94)', opacity: 0.35, pointerEvents: 'none' }
+                : { transform: 'scale(0.97)', opacity: 0.35, pointerEvents: 'none' }
               : undefined
           }
         >
@@ -297,7 +302,7 @@ export default function JobsDone() {
             </p>
           </Animate>
 
-          <div className="relative">
+          <div ref={railViewRef} className="relative">
             <div
               ref={railRef}
               className={`no-scrollbar flex gap-6 sm:gap-7 overflow-x-auto snap-x snap-mandatory pb-1 -mx-5 px-5 sm:-mx-8 sm:px-8 md:-mx-[82px] md:px-[82px] ${
@@ -305,17 +310,18 @@ export default function JobsDone() {
               }`}
             >
               {SERVICES.map((service, i) => (
-                <Animate
+                <div
                   key={service.id}
-                  delay={150 + i * 100}
-                  direction="up"
-                  className="snap-start shrink-0 w-[78vw] sm:w-[320px] lg:w-[360px]"
+                  className={`snap-start shrink-0 w-[78vw] sm:w-[320px] lg:w-[360px] ${
+                    reduceMotion ? '' : `reveal reveal-up ${railInView ? 'is-shown' : ''}`
+                  }`}
+                  style={reduceMotion ? undefined : { transitionDelay: `${i * 60}ms` }}
                 >
                 <button
                   type="button"
                   onClick={() => openJob(service)}
                   aria-label={`Book ${service.jobTitle}`}
-                  className="group relative block w-full text-left aspect-[3/4] rounded-[28px] overflow-hidden bg-[#131315] border border-white/[0.06] transition-[transform,border-color] duration-200 hover:-translate-y-1 hover:border-white/20"
+                  className="group relative block w-full text-left aspect-[3/4] rounded-[28px] overflow-hidden bg-[#131315] border border-white/[0.06] transition-[transform,border-color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] hover:-translate-y-1 hover:border-white/20 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                 >
                   <CardVideo src={service.video} poster={service.poster} alt={service.jobTitle} />
                   <div
@@ -334,11 +340,16 @@ export default function JobsDone() {
                         <br />
                         <span className="bg-gradient-to-r from-white via-chrome to-white bg-clip-text text-transparent">{service.accent}</span>
                       </p>
-                      <span className="text-white/55 text-[12px]">Tap to book →</span>
+                      <span className="text-white/55 text-[12px] transition-colors duration-200 group-hover:text-white/90">
+                        Tap to book{' '}
+                        <span className="inline-block transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:translate-x-1">
+                          →
+                        </span>
+                      </span>
                     </div>
                   </div>
                 </button>
-                </Animate>
+                </div>
               ))}
             </div>
 
@@ -346,7 +357,7 @@ export default function JobsDone() {
               type="button"
               onClick={() => nudge(-1)}
               aria-label="Previous jobs"
-              className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="hidden lg:flex absolute -left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronIcon dir="left" />
             </button>
@@ -354,7 +365,7 @@ export default function JobsDone() {
               type="button"
               onClick={() => nudge(1)}
               aria-label="More jobs"
-              className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white items-center justify-center hover:bg-white/20 btn-press focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ChevronIcon dir="right" />
             </button>
@@ -366,7 +377,7 @@ export default function JobsDone() {
         className={`fixed inset-0 z-[100] bg-white overflow-y-auto ${
           reduceMotion
             ? 'transition-opacity duration-200'
-            : `transition-[transform,opacity] ease-[cubic-bezier(0.16,1,0.3,1)] ${active ? 'duration-[400ms]' : 'duration-200'}`
+            : `transition-[transform,opacity] ease-[cubic-bezier(0.23,1,0.32,1)] ${active ? 'duration-[400ms]' : 'duration-200'}`
         }`}
         style={{
           transformOrigin: 'left center',
@@ -374,7 +385,7 @@ export default function JobsDone() {
             ? undefined
             : active
               ? 'perspective(1800px) rotateY(0deg) scale(1)'
-              : 'perspective(1800px) rotateY(-35deg) scale(0.85)',
+              : 'perspective(1800px) rotateY(-12deg) scale(0.95)',
           opacity: active ? 1 : 0,
           pointerEvents: active ? 'auto' : 'none',
         }}
@@ -386,7 +397,7 @@ export default function JobsDone() {
               <button
                 type="button"
                 onClick={() => setActive(null)}
-                className="flex items-center gap-2 text-[#0B0B0C] text-[14px] font-medium"
+                className="flex items-center gap-2 text-[#0B0B0C] text-[14px] font-medium rounded-md btn-press hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/40"
               >
                 <ArrowLeftIcon />
                 Back
@@ -442,7 +453,7 @@ export default function JobsDone() {
                     <button
                       type="button"
                       onClick={() => setActive(null)}
-                      className="mt-6 bg-[#0B0B0C] text-white rounded-[12px] px-6 py-3 text-[15px] font-medium"
+                      className="mt-6 bg-[#0B0B0C] text-white rounded-[12px] px-6 py-3 text-[15px] font-medium btn-press hover:opacity-90"
                     >
                       Done
                     </button>
@@ -481,7 +492,7 @@ export default function JobsDone() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="mt-[6px] bg-[#0B0B0C] text-white rounded-[12px] py-[15px] text-[15px] font-medium disabled:opacity-40"
+                      className="mt-[6px] bg-[#0B0B0C] text-white rounded-[12px] py-[15px] text-[15px] font-medium btn-press hover:opacity-90 disabled:opacity-40 disabled:active:scale-100"
                     >
                       {submitting ? 'Sending\u2026' : 'Book This Job'}
                     </button>

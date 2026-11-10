@@ -41,39 +41,77 @@ body {
   pointer-events: none;
 }
 
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(24px); }
+/* One set of curves for the whole site. The browser's built-in ease-out is
+   too soft to read as intentional; these start fast and settle. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Scroll reveals. Transitions rather than keyframes, driven by .is-shown,
+   which Animate adds the first time the element enters the viewport. */
+.reveal {
+  opacity: 0;
+  transition: opacity 500ms var(--ease-out), transform 500ms var(--ease-out);
+}
+.reveal-up    { transform: translateY(16px); }
+.reveal-down  { transform: translateY(-12px); }
+.reveal-left  { transform: translateX(-16px); }
+.reveal-right { transform: translateX(16px); }
+.reveal-scale { transform: scale(0.96); }
+.reveal.is-shown { opacity: 1; transform: none; }
+
+/* A photo that wipes in from the top while settling back from a slight zoom. */
+.reveal-clip {
+  clip-path: inset(0 0 100% 0 round 20px);
+  transition: clip-path 900ms var(--ease-in-out);
+}
+.reveal-clip > img {
+  transform: scale(1.08);
+  transition: transform 1200ms var(--ease-out);
+}
+.reveal-clip.is-shown { clip-path: inset(0 0 0 0 round 20px); }
+.reveal-clip.is-shown > img { transform: none; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fade-down {
-  from { opacity: 0; transform: translateY(-16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fade-left {
-  from { opacity: 0; transform: translateX(-20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes fade-right {
-  from { opacity: 0; transform: translateX(20px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-@keyframes fade-scale {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
 }
 @keyframes bar-grow {
   from { transform: scaleY(0); opacity: 0; }
   to   { transform: scaleY(1); opacity: 1; }
 }
 
-.animate-fade-up    { animation: fade-up    0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-fade-down  { animation: fade-down  0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-fade-left  { animation: fade-left  0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-fade-right { animation: fade-right 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-.animate-fade-scale { animation: fade-scale 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+/* Full-screen phone menu: the sheet fades, then the links rise in turn. */
+.menu-sheet { animation: fade-in 200ms var(--ease-out) both; }
+.menu-item  { animation: rise-in 320ms var(--ease-out) both; }
+
+/* An opened FAQ answer eases in instead of snapping into place. */
+.faq-item[open] > .faq-answer { animation: rise-in 240ms var(--ease-out) both; }
+
 .animate-bar-grow {
   animation: bar-grow 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
+}
+
+@layer components {
+  /* Anything pressable gives a little under the finger, so a tap feels heard
+     before the page has had time to respond. */
+  .btn-press {
+    transition-property: transform, background-color, border-color, color, opacity;
+    transition-duration: 160ms;
+    transition-timing-function: var(--ease-out);
+  }
+  .btn-press:active { transform: scale(0.97); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-press:active { transform: none; }
+  .menu-sheet, .menu-item, .faq-item[open] > .faq-answer { animation: none; }
 }
 
 /* Horizontal rails keep their swipe affordance without a visible scrollbar. */

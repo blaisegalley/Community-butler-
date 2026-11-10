@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ['./*.html', './request/*.html', './auth/*.html', './admin/*.html', './src/**/*.{js,ts,jsx,tsx}'],
+  content: ['./*.html', './request/*.html', './auth/*.html', './admin/*.html', './butlers/*.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       fontFamily: {
@@ -22,5 +22,8 @@ export default {
       },
     },
   },
+  // Touch screens fire :hover on tap and then leave it stuck. This gates every
+  // hover: style behind a device that can actually hover.
+  future: { hoverOnlyWhenSupported: true },
   plugins: [],
 };
