@@ -203,7 +203,7 @@ export const local: Backend = {
   },
 
   async rejectJob(id: string, note: string) {
-    const all = patchJob(id, { status: 'Rejected', rejectNote: note || '' });
+    const all = patchJob(id, { status: 'Rejected', rejectNote: note || '', rejectedAt: new Date().toISOString() });
     const job = all.find((j) => j.id === id);
     if (job) logActivity(`Rejected job: ${job.service || 'Job'} for ${job.name}`);
   },

@@ -16,6 +16,8 @@ export interface Job {
   assignedButlerId: string | null;
   assignedAt: string | null;
   completedAt: string | null;
+  /** When it was rejected. Absent where the database predates the column. */
+  rejectedAt?: string | null;
   acceptedBySelf?: boolean;
   /** 1-5 admin-given rating of the Butler's performance on this job. */
   rating?: number;
