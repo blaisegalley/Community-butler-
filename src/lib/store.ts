@@ -139,6 +139,11 @@ export async function rejectJob(id: string, note: string): Promise<void> {
   emitChange();
 }
 
+export async function updateJobSchedule(id: string, date: string, time: string): Promise<void> {
+  await (await backend()).updateJobSchedule(id, date, time);
+  emitChange();
+}
+
 export async function completeJob(id: string, rating?: number): Promise<void> {
   await (await backend()).completeJob(id, rating);
   emitChange();

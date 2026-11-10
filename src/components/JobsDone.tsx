@@ -164,7 +164,7 @@ const SERVICES: ServiceCard[] = [
   },
 ];
 
-const EMPTY_FORM = { name: '', phone: '', email: '', address: '', date: '', details: '' };
+const EMPTY_FORM = { name: '', phone: '', email: '', address: '', date: '', time: '', details: '' };
 
 const inputClass =
   'w-full border border-black/15 rounded-[10px] px-[14px] py-3 text-[14.5px] text-[#0B0B0C] bg-white outline-none focus:border-black/40 transition-colors';
@@ -481,9 +481,15 @@ export default function JobsDone() {
                       <label className={labelClass} htmlFor="book-address">Address or area</label>
                       <input id="book-address" className={inputClass} required value={form.address} onChange={(e) => update('address', e.target.value)} />
                     </div>
-                    <div>
-                      <label className={labelClass} htmlFor="book-date">Preferred date</label>
-                      <input id="book-date" type="date" className={inputClass} value={form.date} onChange={(e) => update('date', e.target.value)} />
+                    <div className="grid grid-cols-2 gap-[14px]">
+                      <div>
+                        <label className={labelClass} htmlFor="book-date">Preferred date</label>
+                        <input id="book-date" type="date" className={inputClass} value={form.date} onChange={(e) => update('date', e.target.value)} />
+                      </div>
+                      <div>
+                        <label className={labelClass} htmlFor="book-time">Preferred time</label>
+                        <input id="book-time" type="time" step={900} className={inputClass} value={form.time} onChange={(e) => update('time', e.target.value)} />
+                      </div>
                     </div>
                     <div>
                       <label className={labelClass} htmlFor="book-details">Details</label>

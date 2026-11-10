@@ -38,6 +38,8 @@ interface JobRow {
   email: string;
   address: string;
   scheduled_for: string;
+  // Only there once 007_job_time_and_reminders.sql has been run.
+  scheduled_time?: string | null;
   budget: string;
   details: string;
   submitted_at: string;
@@ -70,6 +72,7 @@ function toJob(row: JobRow): Job {
     email: row.email,
     address: row.address,
     date: row.scheduled_for,
+    time: row.scheduled_time ?? '',
     budget: row.budget,
     details: row.details,
     submittedAt: row.submitted_at,
@@ -218,6 +221,8 @@ export const remote: Backend = {
       p_scheduled_for: data.date,
       p_budget: data.budget,
       p_details: data.details,
+      // Sent only when given, so a database without 007 still takes requests.
+      ...(data.time ? { p_scheduled_time: data.time } : {}),
     });
     if (error) fail('Could not submit your request', error);
 
@@ -238,6 +243,10 @@ export const remote: Backend = {
   async approveJob(id: string) {
     await statusOnly(id, { status: 'Approved' }, 'Could not approve that job');
     await notify('notify-butlers', id);
+  },
+
+  async updateJobSchedule(id: string, date: string, time: string) {
+    await statusOnly(id, { scheduled_for: date, scheduled_time: time }, 'Could not save that date and time');
   },
 
   async rejectJob(id: string, note: string) {

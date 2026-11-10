@@ -8,6 +8,8 @@ export interface Job {
   email: string;
   address: string;
   date: string;
+  /** 'HH:MM', 24-hour, in the neighbourhood's time. Empty when not set. */
+  time?: string;
   budget: string;
   details: string;
   submittedAt: string;
@@ -25,7 +27,7 @@ export interface Job {
 
 export type NewJobInput = Pick<
   Job,
-  'service' | 'name' | 'phone' | 'email' | 'address' | 'date' | 'budget' | 'details'
+  'service' | 'name' | 'phone' | 'email' | 'address' | 'date' | 'time' | 'budget' | 'details'
 >;
 
 export interface ButlerNotification {
@@ -107,6 +109,8 @@ export interface Backend {
   addJob(data: NewJobInput): Promise<Job>;
   approveJob(id: string): Promise<void>;
   rejectJob(id: string, note: string): Promise<void>;
+  /** Sets when the job happens. Changing it re-arms the reminders. */
+  updateJobSchedule(id: string, date: string, time: string): Promise<void>;
   completeJob(id: string, rating?: number): Promise<void>;
   assignJob(id: string, butlerId: string, notifyMessage?: string): Promise<void>;
   /** Returns false when someone else took the job first. */
