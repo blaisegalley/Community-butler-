@@ -21,6 +21,7 @@ import {
   Job,
   JobStatus,
   rejectJob,
+  updateJobSchedule,
 } from '@/lib/store';
 import { useQuery } from '@/lib/useQuery';
 import ProfileReview from '@/components/ProfileReview';
@@ -132,6 +133,17 @@ function fmtRelative(iso: string) {
   const hrs = Math.round(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.round(hrs / 24)}d ago`;
+}
+/** "Sat, Nov 14 at 2:30 PM", from the job's own 'YYYY-MM-DD' and 'HH:MM'. */
+function fmtWhen(date: string, time?: string) {
+  if (!date) return time ? `Any day at ${fmtTime(time)}` : 'Flexible';
+  const [y, m, d] = date.split('-').map(Number);
+  const day = new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  return time ? `${day} at ${fmtTime(time)}` : day;
+}
+function fmtTime(time: string) {
+  const [h, min] = time.split(':').map(Number);
+  return new Date(2000, 0, 1, h, min).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 function fmtDate(iso: string | null) {
   if (!iso) return '';
@@ -567,6 +579,14 @@ function JobCard({ job, butlers, now }: { job: Job; butlers: Butler[]; now: numb
 
   const handleComplete = (rating: number) => run(() => completeJob(job.id, rating));
 
+  const [editingWhen, setEditingWhen] = useState(false);
+  const [whenDate, setWhenDate] = useState(job.date);
+  const [whenTime, setWhenTime] = useState(job.time ?? '');
+  async function saveWhen() {
+    await run(() => updateJobSchedule(job.id, whenDate, whenTime));
+    setEditingWhen(false);
+  }
+
   return (
     <div className="bg-white border border-black/10 rounded-[14px] px-4 py-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
@@ -584,7 +604,7 @@ function JobCard({ job, butlers, now }: { job: Job; butlers: Butler[]; now: numb
       <dl className="grid gap-x-4 gap-y-1 mt-2.5 text-[12.5px]" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))' }}>
         <div><dt className="text-black/40">Phone</dt><dd className="text-ink font-medium">{job.phone || '—'}</dd></div>
         <div><dt className="text-black/40">Email</dt><dd className="text-ink font-medium">{job.email || '—'}</dd></div>
-        <div><dt className="text-black/40">Preferred date</dt><dd className="text-ink font-medium">{job.date || 'Flexible'}</dd></div>
+        <div><dt className="text-black/40">When</dt><dd className="text-ink font-medium">{fmtWhen(job.date, job.time)}</dd></div>
         <div><dt className="text-black/40">Budget</dt><dd className="text-ink font-medium">{job.budget ? `$${job.budget}` : 'Not specified'}</dd></div>
       </dl>
 
@@ -594,6 +614,55 @@ function JobCard({ job, butlers, now }: { job: Job; butlers: Butler[]; now: numb
           {job.completedAt ? ` — completed ${fmtDate(job.completedAt)}` : ''}
           {job.status === 'Completed' && job.rating && (
             <span className="ml-1.5 text-ink font-medium">· {job.rating}★</span>
+          )}
+        </div>
+      )}
+      {(job.status === 'Approved' || job.status === 'Assigned') && (
+        <div className="mt-2.5 text-[12.5px]">
+          {editingWhen ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="date"
+                aria-label="Job date"
+                value={whenDate}
+                onChange={(e) => setWhenDate(e.target.value)}
+                className="h-[32px] rounded-[8px] border border-black/15 px-2 bg-white text-ink"
+              />
+              <input
+                type="time"
+                step={900}
+                aria-label="Job start time"
+                value={whenTime}
+                onChange={(e) => setWhenTime(e.target.value)}
+                className="h-[32px] rounded-[8px] border border-black/15 px-2 bg-white text-ink"
+              />
+              <button onClick={saveWhen} disabled={busy} className="h-[32px] px-3.5 rounded-[8px] bg-ink text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40">
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setWhenDate(job.date);
+                  setWhenTime(job.time ?? '');
+                  setEditingWhen(false);
+                }}
+                className="h-[32px] px-3 rounded-[8px] text-black/50 hover:bg-black/5 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="text-black/45">
+                {job.date && job.time
+                  ? 'Reminders go out a day and an hour before.'
+                  : job.date
+                    ? 'Add a start time to send the 1-hour reminder.'
+                    : 'Set a date and time to send reminders.'}
+              </span>
+              <button onClick={() => setEditingWhen(true)} className="text-ink font-medium underline underline-offset-2 hover:opacity-70">
+                {job.date ? 'Change date/time' : 'Set date/time'}
+              </button>
+            </div>
           )}
         </div>
       )}

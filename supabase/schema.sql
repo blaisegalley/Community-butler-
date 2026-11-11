@@ -54,7 +54,11 @@ create table if not exists public.jobs (
   -- Set when the corresponding email actually goes out, so a retry or a
   -- double-run of the scheduled job cannot send the same mail twice.
   confirmation_sent_at timestamptz,
-  reminder_sent_at     timestamptz
+  reminder_sent_at     timestamptz,
+  -- Added by 006/007; listed here so a fresh setup has them from the start.
+  rejected_at          timestamptz,
+  scheduled_time       text not null default '',
+  hour_reminder_sent_at timestamptz
 );
 
 create index if not exists jobs_open_idx
@@ -200,17 +204,23 @@ create policy push_delete on public.push_subscriptions for delete to authenticat
 -- Posting a job. Signed-out neighbours call this. It always creates a
 -- 'New', unassigned job — the caller cannot choose a status — and returns
 -- only the new id, never a readable row.
+-- (The time argument arrived with 007; the eight-argument version is
+-- dropped so PostgREST never has two to choose between.)
+drop function if exists public.post_job(text,text,text,text,text,text,text,text);
+
 create or replace function public.post_job(
   p_service text, p_name text, p_phone text, p_email text,
-  p_address text, p_scheduled_for text, p_budget text, p_details text
+  p_address text, p_scheduled_for text, p_budget text, p_details text,
+  p_scheduled_time text default ''
 ) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare new_id uuid;
 begin
-  insert into public.jobs (service, name, phone, email, address, scheduled_for, budget, details)
+  insert into public.jobs (service, name, phone, email, address, scheduled_for, scheduled_time, budget, details)
   values (
     coalesce(p_service,''), coalesce(p_name,''), coalesce(p_phone,''),
     coalesce(p_email,''), coalesce(p_address,''), coalesce(p_scheduled_for,''),
+    case when coalesce(p_scheduled_time,'') ~ '^([01][0-9]|2[0-3]):[0-5][0-9]$' then p_scheduled_time else '' end,
     coalesce(p_budget,''), coalesce(p_details,'')
   )
   returning id into new_id;
@@ -269,8 +279,8 @@ begin
 end;
 $$;
 
-revoke all on function public.post_job(text,text,text,text,text,text,text,text) from public;
-grant execute on function public.post_job(text,text,text,text,text,text,text,text) to anon, authenticated;
+revoke all on function public.post_job(text,text,text,text,text,text,text,text,text) from public;
+grant execute on function public.post_job(text,text,text,text,text,text,text,text,text) to anon, authenticated;
 
 revoke all on function public.subscribe_to_job(uuid,text,text,text) from public;
 grant execute on function public.subscribe_to_job(uuid,text,text,text) to anon, authenticated;

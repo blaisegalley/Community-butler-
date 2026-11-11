@@ -25,6 +25,7 @@ export default function RequestPage() {
     email: '',
     address: '',
     date: '',
+    time: '',
     budget: '',
     details: '',
   });
@@ -125,7 +126,7 @@ export default function RequestPage() {
               </div>
 
               <div className={fieldWrap}>
-                <label className={labelClass} htmlFor="email">Email <span className="text-black/40 font-normal">(optional)</span></label>
+                <label className={labelClass} htmlFor="email">Email <span className="text-black/40 font-normal">(optional — for your confirmation and reminders)</span></label>
                 <input id="email" type="email" className={inputClass} value={form.email} onChange={(e) => update('email', e.target.value)} />
               </div>
 
@@ -139,6 +140,13 @@ export default function RequestPage() {
                   <label className={labelClass} htmlFor="date">Preferred date <span className="text-black/40 font-normal">(optional)</span></label>
                   <input id="date" type="date" className={inputClass} value={form.date} onChange={(e) => update('date', e.target.value)} />
                 </div>
+                <div className={fieldWrap + ' mb-0'}>
+                  <label className={labelClass} htmlFor="time">Preferred time <span className="text-black/40 font-normal">(optional)</span></label>
+                  <input id="time" type="time" step={900} className={inputClass} value={form.time} onChange={(e) => update('time', e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div className={fieldWrap + ' mb-0'}>
                   <label className={labelClass} htmlFor="budget">Budget in dollars <span className="text-black/40 font-normal">(optional)</span></label>
                   <input id="budget" type="number" min={0} placeholder="$" className={inputClass} value={form.budget} onChange={(e) => update('budget', e.target.value)} />

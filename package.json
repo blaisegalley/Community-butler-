@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
-    "test": "node --test 'supabase/functions/_shared/agents/*.test.ts'"
+    "test": "node --test 'supabase/functions/_shared/agents/*.test.ts' 'supabase/functions/send-reminders/*.test.ts'"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

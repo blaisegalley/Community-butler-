@@ -202,6 +202,10 @@ export const local: Backend = {
     if (job) logActivity(`Approved job: ${job.service || 'Job'} for ${job.name}`);
   },
 
+  async updateJobSchedule(id: string, date: string, time: string) {
+    patchJob(id, { date, time });
+  },
+
   async rejectJob(id: string, note: string) {
     const all = patchJob(id, { status: 'Rejected', rejectNote: note || '', rejectedAt: new Date().toISOString() });
     const job = all.find((j) => j.id === id);

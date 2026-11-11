@@ -1,4 +1,4 @@
--- Community Butler — the daily reminder schedule.
+-- Community Butler — the job reminder schedule.
 --
 -- Run this AFTER schema.sql and after deploying the edge functions.
 --
@@ -19,12 +19,12 @@ where exists (
   select 1 from cron.job where jobname = 'community-butler-daily-reminders'
 );
 
--- 15:00 UTC — mid-morning in Illinois year round. The function works out
--- which jobs are "tomorrow" in APP_TIMEZONE, so the exact hour only
--- decides when the reminder lands, not which day it covers.
+-- Every ten minutes, so the 1-hour reminder lands 50 to 60 minutes before
+-- a job. The function works out what is due in APP_TIMEZONE and marks each
+-- reminder as sent, so running it often never sends anything twice.
 select cron.schedule(
   'community-butler-daily-reminders',
-  '0 15 * * *',
+  '*/10 * * * *',
   $$
   select net.http_post(
     url := 'https://<PROJECT-REF>.supabase.co/functions/v1/send-reminders',

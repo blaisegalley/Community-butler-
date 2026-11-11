@@ -12,7 +12,7 @@ alter table public.jobs add column if not exists rejected_at timestamptz;
 -- right whichever device rejected the job, and nothing in the app has to
 -- change if this migration is run late.
 create or replace function public.jobs_stamp_rejected_at()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql set search_path = public as $$
 begin
   if new.status = 'Rejected' and old.status is distinct from 'Rejected' then
     new.rejected_at := now();
