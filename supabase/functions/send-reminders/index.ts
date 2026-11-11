@@ -94,17 +94,6 @@ Deno.serve(async (req) => {
       footnote: 'Community Butler · Arlington Heights, IL',
     });
 
-    const { data: neighbourSubs } = await db
-      .from('push_subscriptions')
-      .select('id,endpoint,p256dh,auth')
-      .eq('job_id', job.id);
-    await sendPush((neighbourSubs ?? []) as PushSubscriptionRow[], {
-      title: kind === 'hour' ? `Your ${service} starts soon` : `Your ${service} is tomorrow`,
-      body: `${kind === 'hour' ? 'Starting' : 'Booked for'} ${when} at ${job.address}.`,
-      url: `${APP_URL}/`,
-      tag: `reminder-${kind}-${job.id}`,
-    });
-
     // ---- the butler doing it
     const butlerEmailed = await sendEmail({
       to: butlerEmail,
@@ -120,6 +109,28 @@ Deno.serve(async (req) => {
         `Running late or can't make it? Call ${PHONE} as soon as you can.`,
       ],
       footnote: `See all your jobs: ${APP_URL}/auth/`,
+    });
+
+    // If there was someone to email and every email was refused (most
+    // likely the sending domain is not verified yet), leave it unmarked so
+    // the next run tries again, rather than losing the reminder.
+    const hadRecipient = Boolean(job.email) || Boolean(butlerEmail);
+    if (hadRecipient && !neighbourEmailed && !butlerEmailed) {
+      console.error(`Reminder emails for job ${job.id} were all refused; will retry next run.`);
+      continue;
+    }
+
+    // Pushes only once the reminder is really going out, so a retried
+    // reminder never buzzes anyone's phone twice.
+    const { data: neighbourSubs } = await db
+      .from('push_subscriptions')
+      .select('id,endpoint,p256dh,auth')
+      .eq('job_id', job.id);
+    await sendPush((neighbourSubs ?? []) as PushSubscriptionRow[], {
+      title: kind === 'hour' ? `Your ${service} starts soon` : `Your ${service} is tomorrow`,
+      body: `${kind === 'hour' ? 'Starting' : 'Booked for'} ${when} at ${job.address}.`,
+      url: `${APP_URL}/`,
+      tag: `reminder-${kind}-${job.id}`,
     });
 
     if (job.assigned_butler_id) {
